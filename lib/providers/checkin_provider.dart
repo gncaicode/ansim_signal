@@ -1,0 +1,375 @@
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/models.dart';
+import '../services/api_service.dart';
+import '../services/notification_service.dart';
+import '../utils/prefs_keys.dart';
+import '../utils/app_config.dart';
+
+class CheckinProvider extends ChangeNotifier {
+  static const _kServerToken = 'server_token';
+
+  final _secure = const FlutterSecureStorage();
+
+  DateTime? _lastCheckIn;
+  CareWorker? _careWorker;
+  bool _isOnboarded = false;
+  int _intervalHours = 24; // 안심시그널 기본값: 24시간
+  bool _alertSent = false;
+  String _userName = '';
+  bool _isLoading = true;
+  String? _serverToken;
+  CheckinMode _checkinMode = CheckinMode.manual;
+
+  // Getters
+  DateTime? get lastCheckIn => _lastCheckIn;
+  CareWorker? get careWorker => _careWorker;
+  bool get isOnboarded => _isOnboarded;
+  int get intervalHours => _intervalHours;
+  bool get alertSent => _alertSent;
+  String get userName => _userName;
+  bool get isLoading => _isLoading;
+  String? get serverToken => _serverToken;
+  CheckinMode get checkinMode => _checkinMode;
+
+  Duration get interval => Duration(hours: _intervalHours);
+
+  /// 마감까지 남은 시간 (음수면 초과)
+  Duration get timeRemaining {
+    if (_lastCheckIn == null) return Duration.zero;
+    final deadline = _lastCheckIn!.add(interval);
+    return deadline.difference(DateTime.now());
+  }
+
+  /// 0.0 ~ 1.0 진행도
+  double get progress {
+    if (_lastCheckIn == null) return 0.0;
+    final elapsed = DateTime.now().difference(_lastCheckIn!);
+    return (elapsed.inSeconds / interval.inSeconds).clamp(0.0, 1.0);
+  }
+
+  CheckinStatus get status {
+    if (_lastCheckIn == null) return CheckinStatus.unknown;
+    final remaining = timeRemaining;
+    if (remaining.isNegative) return CheckinStatus.overdue;
+    // 안심시그널: 24시간 기준 → 남은 시간 8시간 이하면 주의
+    if (remaining.inHours < 8) return CheckinStatus.warning;
+    return CheckinStatus.safe;
+  }
+
+  Future<void> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    _serverToken = await _secure.read(key: _kServerToken);
+    _isOnboarded = prefs.getBool(PrefsKeys.isOnboarded) ?? false;
+
+    // iOS 재설치 복구
+    if (!_isOnboarded && _serverToken != null) {
+      final recovered = await _tryRecoverSession(prefs);
+      if (recovered) {
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+      await _secure.delete(key: _kServerToken);
+      _serverToken = null;
+    }
+
+    _intervalHours = prefs.getInt(PrefsKeys.intervalHours) ?? 24;
+    _alertSent = prefs.getBool(PrefsKeys.alertSent) ?? false;
+    _userName = prefs.getString(PrefsKeys.userName) ?? '';
+    _checkinMode = _modeFromString(prefs.getString(PrefsKeys.checkinMode));
+
+    final ms = prefs.getInt(PrefsKeys.lastCheckIn);
+    if (ms != null) _lastCheckIn = DateTime.fromMillisecondsSinceEpoch(ms);
+
+    final workerName = prefs.getString(PrefsKeys.careWorkerName);
+    final workerPhone = prefs.getString(PrefsKeys.careWorkerPhone);
+    final workerOrg = prefs.getString(PrefsKeys.careWorkerOrg);
+    if (workerName != null && workerPhone != null && workerOrg != null) {
+      _careWorker = CareWorker(
+          name: workerName, phone: workerPhone, organization: workerOrg);
+    }
+
+    _isLoading = false;
+    notifyListeners();
+
+    await syncFromServer();
+  }
+
+  Future<bool> _tryRecoverSession(SharedPreferences prefs) async {
+    try {
+      final data = await ApiService.getStatus(_serverToken!);
+      if (data['status'] == null || data['status'] == 'error') return false;
+
+      _isOnboarded = true;
+      await prefs.setBool(PrefsKeys.isOnboarded, true);
+
+      final serverInterval = _parseInt(data['interval_hours']);
+      _intervalHours = serverInterval ?? 24;
+      await prefs.setInt(PrefsKeys.intervalHours, _intervalHours);
+
+      final serverCheckinStr = data['last_checkin_at']?.toString();
+      if (serverCheckinStr != null) {
+        _lastCheckIn = DateTime.parse(serverCheckinStr).toLocal();
+        await prefs.setInt(PrefsKeys.lastCheckIn, _lastCheckIn!.millisecondsSinceEpoch);
+      }
+
+      _alertSent = _parseBool(data['alert_sent']);
+      await prefs.setBool(PrefsKeys.alertSent, _alertSent);
+
+      final serverName = data['user_name']?.toString();
+      if (serverName != null && serverName.isNotEmpty) {
+        _userName = serverName;
+        await prefs.setString(PrefsKeys.userName, serverName);
+      }
+
+      await _saveCareWorkerFromData(prefs, data['care_worker']);
+
+      debugPrint('[Provider] 재설치 세션 복구 완료 (iOS Keychain)');
+      return true;
+    } catch (e) {
+      debugPrint('[Provider] 세션 복구 실패: $e');
+      return false;
+    }
+  }
+
+  Future<void> checkIn() async {
+    // 낙관적 업데이트 — 서버 응답 전 즉시 UI 반영
+    final prefs = await SharedPreferences.getInstance();
+    _lastCheckIn = DateTime.now();
+    _alertSent = false;
+    await prefs.setInt(PrefsKeys.lastCheckIn, _lastCheckIn!.millisecondsSinceEpoch);
+    await prefs.setBool(PrefsKeys.alertSent, false);
+    notifyListeners();
+
+    NotificationService.scheduleExpirationReminder(
+      lastCheckIn: _lastCheckIn!,
+      intervalHours: _intervalHours,
+    );
+
+    if (_serverToken != null) {
+      try {
+        final res = await ApiService.checkIn(_serverToken!);
+        // 서버 응답의 checked_at으로 정확한 시간 동기화
+        final checkedAt = res['checked_at']?.toString();
+        if (checkedAt != null) {
+          final serverTime = DateTime.parse(checkedAt).toLocal();
+          _lastCheckIn = serverTime;
+          await prefs.setInt(PrefsKeys.lastCheckIn, serverTime.millisecondsSinceEpoch);
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('[API] checkIn failed: $e');
+      }
+    }
+  }
+
+  Future<void> saveUserName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    _userName = name;
+    await prefs.setString(PrefsKeys.userName, name);
+    notifyListeners();
+  }
+
+  /// 온보딩 완료. 초대코드로 서버 등록 후 담당자 정보 수신.
+  /// 성공 시 true, 실패 시 false 반환.
+  Future<bool> completeOnboarding(String inviteCode) async {
+    try {
+      final result = await ApiService.register(
+        _userName.isEmpty ? '사용자' : _userName,
+        inviteCode,
+        lang: AppConfig.lang,
+      );
+
+      final token = result['token'] as String;
+      _serverToken = token;
+      await _secure.write(key: _kServerToken, value: token);
+
+      // 담당자 정보 저장
+      final prefs = await SharedPreferences.getInstance();
+      await _saveCareWorkerFromData(prefs, result['care_worker']);
+    } catch (e) {
+      debugPrint('[API] onboarding register failed: $e');
+      return false;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    _isOnboarded = true;
+    await prefs.setBool(PrefsKeys.isOnboarded, true);
+    notifyListeners();
+
+    await checkIn();
+    return true;
+  }
+
+  /// 앱 포그라운드 복귀 시 SharedPreferences 동기화
+  Future<void> syncFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    final ms = prefs.getInt(PrefsKeys.lastCheckIn);
+    if (ms != null) {
+      final fromPrefs = DateTime.fromMillisecondsSinceEpoch(ms);
+      if (_lastCheckIn == null || fromPrefs.isAfter(_lastCheckIn!)) {
+        _lastCheckIn = fromPrefs;
+        _alertSent = prefs.getBool(PrefsKeys.alertSent) ?? false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// 서버 상태로 로컬 동기화
+  Future<void> syncFromServer() async {
+    if (_serverToken == null) return;
+    try {
+      final data = await ApiService.getStatus(_serverToken!);
+      final prefs = await SharedPreferences.getInstance();
+      bool changed = false;
+
+      // interval_hours — 사용자가 직접 설정한 경우 서버 값 무시
+      final userSetInterval = prefs.getBool(PrefsKeys.intervalSetByUser) ?? false;
+      if (!userSetInterval) {
+        final serverInterval = _parseInt(data['interval_hours']);
+        if (serverInterval != null && serverInterval != _intervalHours) {
+          _intervalHours = serverInterval;
+          await prefs.setInt(PrefsKeys.intervalHours, serverInterval);
+          changed = true;
+        }
+      }
+
+      // care_worker — 서버에 등록된 담당자 정보 갱신
+      final cwData = data['care_worker'];
+      if (cwData != null) {
+        await _saveCareWorkerFromData(prefs, cwData);
+        changed = true;
+      }
+
+      // status == 'unknown' 이면 체크인 이력 없음, 이하 skip
+      if (data['status'] == 'unknown') {
+        if (changed) notifyListeners();
+        return;
+      }
+
+      // last_checkin_at — 서버가 더 최신이면 업데이트
+      final serverCheckinStr = data['last_checkin_at']?.toString();
+      if (serverCheckinStr != null) {
+        final serverCheckin = DateTime.parse(serverCheckinStr).toLocal();
+        if (_lastCheckIn == null || serverCheckin.isAfter(_lastCheckIn!)) {
+          _lastCheckIn = serverCheckin;
+          await prefs.setInt(PrefsKeys.lastCheckIn, serverCheckin.millisecondsSinceEpoch);
+          changed = true;
+        }
+      }
+
+      // alert_sent
+      final serverAlertSent = _parseBool(data['alert_sent']);
+      if (serverAlertSent && !_alertSent) {
+        _alertSent = true;
+        await prefs.setBool(PrefsKeys.alertSent, true);
+        changed = true;
+      }
+
+      if (changed) notifyListeners();
+    } catch (e) {
+      debugPrint('[API] syncFromServer failed: $e');
+    }
+  }
+
+  Future<void> _saveCareWorkerFromData(
+      SharedPreferences prefs, dynamic careWorkerData) async {
+    if (careWorkerData == null) return;
+    final cw = careWorkerData as Map<String, dynamic>;
+    final name = cw['name']?.toString() ?? '';
+    final phone = cw['phone']?.toString() ?? '';
+    final org = cw['organization']?.toString() ?? '';
+    if (name.isNotEmpty) {
+      _careWorker = CareWorker(name: name, phone: phone, organization: org);
+      await prefs.setString(PrefsKeys.careWorkerName, name);
+      await prefs.setString(PrefsKeys.careWorkerPhone, phone);
+      await prefs.setString(PrefsKeys.careWorkerOrg, org);
+      notifyListeners();
+    }
+  }
+
+  /// 체크인 모드 변경
+  Future<void> setCheckinMode(CheckinMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    _checkinMode = mode;
+    await prefs.setString(PrefsKeys.checkinMode, mode.name);
+    notifyListeners();
+  }
+
+  /// 체크인 주기 변경 (12 or 24시간)
+  Future<void> setIntervalHours(int hours) async {
+    final prefs = await SharedPreferences.getInstance();
+    _intervalHours = hours;
+    await prefs.setInt(PrefsKeys.intervalHours, hours);
+    await prefs.setBool(PrefsKeys.intervalSetByUser, true);
+    notifyListeners();
+
+    if (_serverToken != null) {
+      try {
+        await ApiService.updateSettings(_serverToken!, hours);
+      } catch (e) {
+        debugPrint('[API] updateSettings failed: $e');
+      }
+    }
+  }
+
+  /// 앱 열 때 / 폰 사용 시 자동 체크인 (다음 마감 전까지 중복 방지)
+  Future<void> autoCheckIn() async {
+    if (_serverToken == null) return;
+    if (_lastCheckIn != null && !timeRemaining.isNegative) return;
+    await checkIn();
+  }
+
+  static CheckinMode _modeFromString(String? value) => switch (value) {
+        'appOpen' => CheckinMode.appOpen,
+        'passive' => CheckinMode.passive,
+        _ => CheckinMode.manual,
+      };
+
+  Future<void> markAlertSent() async {
+    final prefs = await SharedPreferences.getInstance();
+    _alertSent = true;
+    await prefs.setBool(PrefsKeys.alertSent, true);
+    notifyListeners();
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
+  }
+
+  Future<void> reset() async {
+    if (_serverToken != null) {
+      try {
+        await ApiService.withdraw(_serverToken!);
+      } catch (e) {
+        debugPrint('[API] withdraw failed: $e');
+      }
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await _secure.deleteAll();
+    _isOnboarded = false;
+    _lastCheckIn = null;
+    _careWorker = null;
+    _intervalHours = 24;
+    _alertSent = false;
+    _userName = '';
+    _serverToken = null;
+    notifyListeners();
+  }
+}
