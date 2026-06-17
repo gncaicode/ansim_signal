@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -57,6 +58,11 @@ class SettingsScreen extends StatelessWidget {
                 current: provider.checkinMode,
                 onChanged: (mode) => provider.setCheckinMode(mode),
               ),
+              if (Platform.isIOS &&
+                  provider.checkinMode == CheckinMode.passive) ...[
+                const SizedBox(height: 8),
+                _IosPassiveNote(),
+              ],
               const SizedBox(height: 24),
 
               // ── 체크인 주기 ───────────────────────────────
@@ -421,6 +427,42 @@ class _ResetDialog extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── iOS passive 모드 안내 ────────────────────────────────────
+class _IosPassiveNote extends StatelessWidget {
+  const _IosPassiveNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              size: 16, color: Color(0xFFB45309)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'iPhone에서는 백그라운드 폰 사용 감지가 시스템에 의해 제한될 수 있습니다. '
+              '안정적인 자동 신호 전송을 위해 "앱을 열 때 자동" 모드를 권장합니다.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF92400E),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -57,6 +57,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- 잠금 해제 수신자 (passive 모드 체크인) -->
+        <receiver
+            android:name=".UserPresentReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

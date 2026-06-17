@@ -22,7 +22,6 @@ class BackgroundService {
       final token = await secure.read(key: _kServerToken);
       if (token != null) {
         try {
-          // 다음 마감 전까지 중복 방지
           final ms = prefs.getInt(PrefsKeys.lastCheckIn);
           final lastCheckIn = ms != null
               ? DateTime.fromMillisecondsSinceEpoch(ms)
