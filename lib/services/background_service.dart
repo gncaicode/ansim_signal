@@ -6,9 +6,9 @@ import 'widget_service.dart';
 import '../models/models.dart';
 import '../utils/prefs_keys.dart';
 
+/// - 그 외: 로컬 알림만 처리₩₩
 /// 백그라운드 작업 (WorkManager).
 /// - passive 모드: 서버에 자동 체크인
-/// - 그 외: 로컬 알림만 처리₩₩
 class BackgroundService {
   static const _kServerToken = 'server_token';
 
