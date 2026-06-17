@@ -24,7 +24,8 @@ class SettingsScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          body: ListView(
+          body: SafeArea(
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
             children: [
               // ── 내 정보 ───────────────────────────────────
@@ -187,6 +188,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         );
       },
