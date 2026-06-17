@@ -2,11 +2,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
+import 'widget_service.dart';
+import '../models/models.dart';
 import '../utils/prefs_keys.dart';
 
 /// 백그라운드 작업 (WorkManager).
 /// - passive 모드: 서버에 자동 체크인
-/// - 그 외: 로컬 알림만 처리
+/// - 그 외: 로컬 알림만 처리₩₩
 class BackgroundService {
   static const _kServerToken = 'server_token';
 
@@ -67,6 +69,67 @@ class BackgroundService {
       }
     } else if (remaining.inHours <= 6) {
       await NotificationService.showReminderNotification(remaining.inHours);
+    }
+
+    // ── 위젯 업데이트 ───────────────────────────────────────────
+    await WidgetService.initialize();
+    final wMs = prefs.getInt(PrefsKeys.lastCheckIn);
+    if (wMs != null) {
+      final wLastCheckIn = DateTime.fromMillisecondsSinceEpoch(wMs);
+      final wIntervalHours = prefs.getInt(PrefsKeys.intervalHours) ?? 24;
+      final wElapsed = DateTime.now().difference(wLastCheckIn);
+      final wRemaining = Duration(hours: wIntervalHours) - wElapsed;
+      final wStatus = wRemaining.isNegative
+          ? CheckinStatus.overdue
+          : wRemaining.inHours < 8
+              ? CheckinStatus.warning
+              : CheckinStatus.safe;
+      await WidgetService.update(
+        status: wStatus,
+        lastCheckIn: wLastCheckIn,
+        timeRemaining: wRemaining,
+      );
+    }
+
+    return true;
+  }
+
+  /// 홈 위젯 버튼 탭 시 백그라운드 체크인.
+  /// 앱을 열지 않고 API 호출 후 위젯 갱신.
+  static Future<bool> widgetCheckIn() async {
+    await NotificationService.initialize();
+
+    const secure = FlutterSecureStorage();
+    final token = await secure.read(key: _kServerToken);
+    if (token == null) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final res = await ApiService.checkIn(token);
+      final checkedAt = res['checked_at']?.toString();
+      final ts = checkedAt != null
+          ? DateTime.parse(checkedAt).millisecondsSinceEpoch
+          : DateTime.now().millisecondsSinceEpoch;
+      await prefs.setInt(PrefsKeys.lastCheckIn, ts);
+      await prefs.setBool(PrefsKeys.alertSent, false);
+
+      final lastCheckIn = DateTime.fromMillisecondsSinceEpoch(ts);
+      final intervalHours = prefs.getInt(PrefsKeys.intervalHours) ?? 24;
+      final remaining = Duration(hours: intervalHours);
+
+      await WidgetService.initialize();
+      await WidgetService.update(
+        status: CheckinStatus.safe,
+        lastCheckIn: lastCheckIn,
+        timeRemaining: remaining,
+      );
+
+      NotificationService.scheduleExpirationReminder(
+        lastCheckIn: lastCheckIn,
+        intervalHours: intervalHours,
+      );
+    } catch (e) {
+      return false;
     }
 
     return true;

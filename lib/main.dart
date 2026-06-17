@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'providers/checkin_provider.dart';
 import 'services/notification_service.dart';
 import 'services/background_service.dart';
+import 'services/widget_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 
@@ -13,8 +15,10 @@ import 'screens/splash_screen.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     try {
-      await BackgroundService.performCheckIn();
-      return true;
+      if (taskName == 'ansim-widget-checkin') {
+        return await BackgroundService.widgetCheckIn();
+      }
+      return await BackgroundService.performCheckIn();
     } catch (e) {
       debugPrint('[Background] task failed: $e');
       return false;
@@ -34,6 +38,7 @@ void main() async {
   );
 
   await NotificationService.initialize();
+  await WidgetService.initialize();
 
   await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
 
@@ -76,6 +81,16 @@ class _AnsimSignalAppState extends State<AnsimSignalApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    HomeWidget.widgetClicked.listen(_onWidgetClicked);
+    HomeWidget.initiallyLaunchedFromHomeWidget().then(_onWidgetClicked);
+  }
+
+  void _onWidgetClicked(Uri? uri) {
+    if (uri == null) return;
+    if (uri.host == 'checkin') {
+      final provider = context.read<CheckinProvider>();
+      if (provider.isOnboarded) provider.checkIn();
+    }
   }
 
   @override

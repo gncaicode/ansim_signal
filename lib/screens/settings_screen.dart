@@ -58,11 +58,6 @@ class SettingsScreen extends StatelessWidget {
                 current: provider.checkinMode,
                 onChanged: (mode) => provider.setCheckinMode(mode),
               ),
-              if (Platform.isIOS &&
-                  provider.checkinMode == CheckinMode.passive) ...[
-                const SizedBox(height: 8),
-                _IosPassiveNote(),
-              ],
               const SizedBox(height: 24),
 
               // ── 체크인 주기 ───────────────────────────────
@@ -515,11 +510,18 @@ class _CheckinModeCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        children: _modes.indexed.map((entry) {
+        children: _modes
+            .where((m) => !(Platform.isIOS && m.mode == CheckinMode.passive))
+            .toList()
+            .indexed
+            .map((entry) {
           final i = entry.$1;
           final item = entry.$2;
           final selected = current == item.mode;
-          final isLast = i == _modes.length - 1;
+          final visibleModes = _modes
+              .where((m) => !(Platform.isIOS && m.mode == CheckinMode.passive))
+              .toList();
+          final isLast = i == visibleModes.length - 1;
 
           return Column(
             children: [

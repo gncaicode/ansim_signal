@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../utils/prefs_keys.dart';
 import '../utils/app_config.dart';
+import '../services/widget_service.dart';
 
 class CheckinProvider extends ChangeNotifier {
   static const _kServerToken = 'server_token';
@@ -95,6 +96,18 @@ class CheckinProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
 
+    // iOS 위젯용 토큰을 App Group UserDefaults에 저장
+    if (_serverToken != null) {
+      await WidgetService.saveToken(_serverToken!);
+    }
+
+    await WidgetService.update(
+      status: status,
+      lastCheckIn: _lastCheckIn,
+      timeRemaining: timeRemaining,
+      intervalHours: _intervalHours,
+    );
+
     await syncFromServer();
   }
 
@@ -128,6 +141,13 @@ class CheckinProvider extends ChangeNotifier {
       await _saveCareWorkerFromData(prefs, data['care_worker']);
 
       debugPrint('[Provider] 재설치 세션 복구 완료 (iOS Keychain)');
+      await WidgetService.saveToken(_serverToken!);
+      await WidgetService.update(
+        status: status,
+        lastCheckIn: _lastCheckIn,
+        timeRemaining: timeRemaining,
+        intervalHours: _intervalHours,
+      );
       return true;
     } catch (e) {
       debugPrint('[Provider] 세션 복구 실패: $e');
@@ -164,6 +184,13 @@ class CheckinProvider extends ChangeNotifier {
         debugPrint('[API] checkIn failed: $e');
       }
     }
+
+    await WidgetService.update(
+      status: status,
+      lastCheckIn: _lastCheckIn,
+      timeRemaining: timeRemaining,
+      intervalHours: _intervalHours,
+    );
   }
 
   Future<void> saveUserName(String name) async {
@@ -186,6 +213,7 @@ class CheckinProvider extends ChangeNotifier {
       final token = result['token'] as String;
       _serverToken = token;
       await _secure.write(key: _kServerToken, value: token);
+      await WidgetService.saveToken(token);
 
       // 담당자 정보 저장
       final prefs = await SharedPreferences.getInstance();
@@ -271,6 +299,12 @@ class CheckinProvider extends ChangeNotifier {
       }
 
       if (changed) notifyListeners();
+      await WidgetService.update(
+        status: status,
+        lastCheckIn: _lastCheckIn,
+        timeRemaining: timeRemaining,
+        intervalHours: _intervalHours,
+      );
     } catch (e) {
       debugPrint('[API] syncFromServer failed: $e');
     }
@@ -335,6 +369,22 @@ class CheckinProvider extends ChangeNotifier {
     _alertSent = true;
     await prefs.setBool(PrefsKeys.alertSent, true);
     notifyListeners();
+  }
+
+  /// [테스트용] 마지막 체크인 시간을 지정한 시간 전으로 설정
+  Future<void> setLastCheckInHoursAgo(int hours) async {
+    final prefs = await SharedPreferences.getInstance();
+    _lastCheckIn = DateTime.now().subtract(Duration(hours: hours));
+    _alertSent = false;
+    await prefs.setInt(PrefsKeys.lastCheckIn, _lastCheckIn!.millisecondsSinceEpoch);
+    await prefs.setBool(PrefsKeys.alertSent, false);
+    notifyListeners();
+    await WidgetService.update(
+      status: status,
+      lastCheckIn: _lastCheckIn,
+      timeRemaining: timeRemaining,
+      intervalHours: _intervalHours,
+    );
   }
 
   static int? _parseInt(dynamic value) {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">안심시그널</string>
+    <string name="widget_small_description">안심시그널 소형 위젯 (2×2)</string>
+    <string name="widget_medium_description">안심시그널 중형 위젯 (4×2)</string>
+</resources>
