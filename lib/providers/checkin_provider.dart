@@ -205,7 +205,6 @@ class CheckinProvider extends ChangeNotifier {
   Future<bool> completeOnboarding(String inviteCode) async {
     try {
       final result = await ApiService.register(
-        _userName.isEmpty ? '사용자' : _userName,
         inviteCode,
         lang: AppConfig.lang,
       );
@@ -215,8 +214,15 @@ class CheckinProvider extends ChangeNotifier {
       await _secure.write(key: _kServerToken, value: token);
       await WidgetService.saveToken(token);
 
-      // 담당자 정보 저장
+      // 서버에서 이름 수신
       final prefs = await SharedPreferences.getInstance();
+      final serverName = result['user_name']?.toString();
+      if (serverName != null && serverName.isNotEmpty) {
+        _userName = serverName;
+        await prefs.setString(PrefsKeys.userName, serverName);
+      }
+
+      // 담당자 정보 저장
       await _saveCareWorkerFromData(prefs, result['care_worker']);
     } catch (e) {
       debugPrint('[API] onboarding register failed: $e');

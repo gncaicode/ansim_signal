@@ -14,7 +14,6 @@ class ApiService {
   /// 초대코드로 신규 등록 → 서버 토큰 반환
   /// 서버 응답에 care_worker 정보가 포함될 수 있음
   static Future<Map<String, dynamic>> register(
-    String userName,
     String inviteCode, {
     String lang = 'ko',
   }) async {
@@ -23,7 +22,6 @@ class ApiService {
           Uri.parse('$baseUrl/auth/register'),
           headers: _headers(),
           body: jsonEncode({
-            'user_name': userName,
             'invite_code': inviteCode,
             'lang': lang,
           }),

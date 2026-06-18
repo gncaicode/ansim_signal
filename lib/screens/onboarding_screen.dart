@@ -19,17 +19,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   bool _isProcessing = false;
 
-  // Page 1 – 이름
-  final _userNameCtrl = TextEditingController();
-
-  // Page 2 – 초대코드
+  // Page 1 – 초대코드
   final _inviteCodeCtrl = TextEditingController();
   final _inviteFormKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
     _pageCtrl.dispose();
-    _userNameCtrl.dispose();
     _inviteCodeCtrl.dispose();
     super.dispose();
   }
@@ -49,12 +45,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isProcessing = true);
 
     final provider = context.read<CheckinProvider>();
-    final userName = _userNameCtrl.text.trim().isEmpty
-        ? '사용자'
-        : _userNameCtrl.text.trim();
     final inviteCode = _inviteCodeCtrl.text.trim().toUpperCase();
 
-    await provider.saveUserName(userName);
     await NotificationService.requestPermissions();
     final success = await provider.completeOnboarding(inviteCode);
 
@@ -97,8 +89,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _Dot(active: _currentPage == 0),
                   const SizedBox(width: 6),
                   _Dot(active: _currentPage == 1),
-                  const SizedBox(width: 6),
-                  _Dot(active: _currentPage == 2),
                 ],
               ),
             ),
@@ -111,7 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 children: [
                   _WelcomePage(onNext: _next),
-                  _UserNamePage(ctrl: _userNameCtrl, onNext: _next),
                   _InviteCodePage(
                     formKey: _inviteFormKey,
                     codeCtrl: _inviteCodeCtrl,
@@ -290,89 +279,7 @@ class _WelcomePage extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────
-// 페이지 1: 이름 입력
-// ────────────────────────────────────────────────────────────
-class _UserNamePage extends StatelessWidget {
-  final TextEditingController ctrl;
-  final VoidCallback onNext;
-  const _UserNamePage({required this.ctrl, required this.onNext});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        24, 16, 24,
-        MediaQuery.of(context).viewInsets.bottom + 28,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppTheme.iconBg,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Center(
-              child: Icon(Icons.person_outline, size: 28, color: AppTheme.primary),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            '성함을\n알려주세요',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: AppTheme.textDark,
-              letterSpacing: -0.8,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '담당 복지사가 확인할 때 표시되는 이름입니다.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textMedium,
-              height: 1.7,
-            ),
-          ),
-          const SizedBox(height: 36),
-          TextField(
-            controller: ctrl,
-            decoration: _inputDecor(
-              label: '이름 (선택)',
-              icon: Icons.person_outline,
-              hint: '홍길동',
-            ),
-            style: const TextStyle(fontSize: 18),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => onNext(),
-          ),
-          const SizedBox(height: 16),
-          _PrimaryButton(label: '다음', onPressed: onNext),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: onNext,
-              child: Text(
-                '건너뛰기',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppTheme.textSubtle,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ────────────────────────────────────────────────────────────
-// 페이지 2: 초대코드 입력
+// 페이지 1: 초대코드 입력
 // ────────────────────────────────────────────────────────────
 class _InviteCodePage extends StatelessWidget {
   final GlobalKey<FormState> formKey;
