@@ -333,7 +333,7 @@ class _InviteCodePage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '담당 공무원 또는 복지사에게\n받은 6자리 코드를 입력하세요.',
+                '담당 공무원 또는 복지사에게\n받은 8자리 코드를 입력하세요.',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppTheme.textMedium,
@@ -342,13 +342,13 @@ class _InviteCodePage extends StatelessWidget {
               ),
               const SizedBox(height: 36),
 
-              // 초대코드 입력 (6자리, 대문자)
+              // 초대코드 입력 (8자리, 대문자)
               TextFormField(
                 controller: codeCtrl,
                 decoration: _inputDecor(
                   label: '초대코드',
                   icon: Icons.key_rounded,
-                  hint: 'A1B2C3',
+                  hint: 'A1B2C3D4',
                 ),
                 style: const TextStyle(
                   fontSize: 24,
@@ -356,15 +356,15 @@ class _InviteCodePage extends StatelessWidget {
                   letterSpacing: 6,
                 ),
                 textAlign: TextAlign.center,
-                textCapitalization: TextCapitalization.characters,
-                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.none,
+                keyboardType: TextInputType.visiblePassword,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                  LengthLimitingTextInputFormatter(6),
+                  LengthLimitingTextInputFormatter(8),
                 ],
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return '초대코드를 입력해 주세요';
-                  if (v.trim().length != 6) return '6자리 코드를 입력해 주세요';
+                  if (v.trim().length != 8) return '8자리 코드를 입력해 주세요';
                   return null;
                 },
                 textInputAction: TextInputAction.done,
