@@ -360,6 +360,7 @@ class _InviteCodePage extends StatelessWidget {
                 keyboardType: TextInputType.visiblePassword,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  _UpperCaseFormatter(),
                   LengthLimitingTextInputFormatter(8),
                 ],
                 validator: (v) {
@@ -408,5 +409,13 @@ class _InviteCodePage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _UpperCaseFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toUpperCase());
   }
 }

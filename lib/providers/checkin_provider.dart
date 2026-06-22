@@ -216,7 +216,7 @@ class CheckinProvider extends ChangeNotifier {
 
       // 서버에서 이름 수신
       final prefs = await SharedPreferences.getInstance();
-      final serverName = result['user_name']?.toString();
+      final serverName = (result['user'] as Map<String, dynamic>?)?['name']?.toString();
       if (serverName != null && serverName.isNotEmpty) {
         _userName = serverName;
         await prefs.setString(PrefsKeys.userName, serverName);

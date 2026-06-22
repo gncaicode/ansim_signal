@@ -28,13 +28,13 @@ class ApiService {
         )
         .timeout(_timeout);
 
-    if (res.statusCode == 201) {
+    if (res.statusCode == 200 || res.statusCode == 201) {
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       final token = body['token'];
       if (token == null || token is! String || token.isEmpty) {
         throw Exception('register: invalid token in response');
       }
-      return body; // { token, care_worker: { name, phone, organization } }
+      return body; // { token, user: { name }, care_worker: { name, phone, organization } }
     }
     throw Exception('register failed: ${res.statusCode}');
   }
