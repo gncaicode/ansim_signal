@@ -192,7 +192,7 @@ class _WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
