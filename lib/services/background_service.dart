@@ -81,7 +81,7 @@ class BackgroundService {
       final wRemaining = Duration(hours: wIntervalHours) - wElapsed;
       final wStatus = wRemaining.isNegative
           ? CheckinStatus.overdue
-          : wRemaining.inHours < 8
+          : wRemaining.inHours < wIntervalHours / 3
               ? CheckinStatus.warning
               : CheckinStatus.safe;
       await WidgetService.update(
