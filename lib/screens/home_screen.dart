@@ -251,12 +251,27 @@ class _HomeScreenState extends State<HomeScreen>
                 // ── 담당 복지사 정보 필 ──────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _CareWorkerPill(
-                    careWorker: provider.careWorker,
-                    onCall: provider.careWorker?.phone != null
-                        ? () => _callCareWorker(provider.careWorker!.phone)
-                        : null,
-                    onTap: _openSettings,
+                  child: Column(
+                    children: provider.careWorkers.isEmpty
+                        ? [
+                            _CareWorkerPill(
+                              careWorker: null,
+                              onCall: null,
+                              onTap: _openSettings,
+                            )
+                          ]
+                        : provider.careWorkers
+                            .map((w) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: _CareWorkerPill(
+                                    careWorker: w,
+                                    onCall: w.phone.isNotEmpty
+                                        ? () => _callCareWorker(w.phone)
+                                        : null,
+                                    onTap: _openSettings,
+                                  ),
+                                ))
+                            .toList(),
                   ),
                 ),
 
@@ -600,7 +615,7 @@ class _CareWorkerPill extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '담당: ${careWorker.name} (${careWorker.organization})',
+                          '담당: ${careWorker.name}',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

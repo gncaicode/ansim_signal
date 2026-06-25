@@ -4,6 +4,7 @@ class PrefsKeys {
   static const intervalHours     = 'interval_hours';
   static const alertSent         = 'alert_sent';
   static const userName          = 'user_name';
+  static const careWorkers       = 'care_workers_json';
   static const careWorkerName    = 'care_worker_name';
   static const careWorkerPhone   = 'care_worker_phone';
   static const careWorkerOrg     = 'care_worker_org';

@@ -9,6 +9,18 @@ class CareWorker {
     required this.phone,
     required this.organization,
   });
+
+  factory CareWorker.fromJson(Map<String, dynamic> json) => CareWorker(
+        name: json['name']?.toString() ?? '',
+        phone: json['phone']?.toString() ?? '',
+        organization: json['organization']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'phone': phone,
+        'organization': organization,
+      };
 }
 
 enum CheckinStatus { safe, warning, overdue, unknown }

@@ -6,8 +6,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,7 +22,7 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "WidgetCheckin"
         private const val API_URL = "http://ansim.gncaitech.com/api/checkin"
-        private const val TOKEN_KEY = "server_token"
+        private const val TOKEN_KEY = "ansim_server_token"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -44,12 +42,14 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
 
                 // API 완료 후 서버 확정 시간으로 재갱신
                 val ts = callCheckinApi(token)
-                if (ts != null && ts != optimisticTs) {
-                    saveCheckinTime(context, ts)
-                    refreshWidgets(context)
-                    Log.d(TAG, "위젯 체크인 완료(서버 시간 반영): $ts")
+                if (ts != null) {
+                    if (ts != optimisticTs) {
+                        saveCheckinTime(context, ts)
+                        refreshWidgets(context)
+                    }
+                    Log.d(TAG, "위젯 체크인 완료(서버 반영): $ts")
                 } else {
-                    Log.d(TAG, "위젯 체크인 완료(낙관적 시간 유지)")
+                    Log.w(TAG, "위젯 체크인 API 실패 — 낙관적 시간 유지")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "위젯 체크인 오류", e)
@@ -59,19 +59,10 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
         }
     }
 
-    /** FlutterSecureStorage(EncryptedSharedPreferences)에서 서버 토큰 읽기 */
+    /** home_widget이 저장한 HomeWidgetPreferences에서 서버 토큰 읽기 */
     private fun readToken(context: Context): String? {
         return try {
-            val masterKey = MasterKey.Builder(context.applicationContext)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            val prefs = EncryptedSharedPreferences.create(
-                context.applicationContext,
-                "FlutterSecureStorage",
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
+            val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
             prefs.getString(TOKEN_KEY, null)
         } catch (e: Exception) {
             Log.e(TAG, "토큰 읽기 실패", e)
@@ -87,16 +78,23 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
                 requestMethod = "POST"
                 setRequestProperty("Authorization", "Bearer $token")
                 setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Content-Length", "0")
+                doOutput = false
                 connectTimeout = 10_000
                 readTimeout = 10_000
             }
-            conn.connect()
 
-            if (conn.responseCode == 200) {
+            val code = conn.responseCode
+            Log.d(TAG, "체크인 API 응답 코드: $code")
+            if (code == 200) {
                 val body = conn.inputStream.bufferedReader().readText()
                 val checkedAt = JSONObject(body).optString("checked_at")
                 if (checkedAt.isNotEmpty()) parseIso8601(checkedAt) else System.currentTimeMillis()
-            } else null
+            } else {
+                val errBody = conn.errorStream?.bufferedReader()?.readText() ?: "(없음)"
+                Log.w(TAG, "체크인 API 실패 $code: $errBody")
+                null
+            }
         } finally {
             conn?.disconnect()
         }

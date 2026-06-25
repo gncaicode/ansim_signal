@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -14,7 +15,7 @@ class CheckinProvider extends ChangeNotifier {
   final _secure = const FlutterSecureStorage();
 
   DateTime? _lastCheckIn;
-  CareWorker? _careWorker;
+  List<CareWorker> _careWorkers = [];
   bool _isOnboarded = false;
   int _intervalHours = 24; // 안심시그널 기본값: 24시간
   bool _alertSent = false;
@@ -25,7 +26,8 @@ class CheckinProvider extends ChangeNotifier {
 
   // Getters
   DateTime? get lastCheckIn => _lastCheckIn;
-  CareWorker? get careWorker => _careWorker;
+  List<CareWorker> get careWorkers => _careWorkers;
+  CareWorker? get careWorker => _careWorkers.isNotEmpty ? _careWorkers.first : null;
   bool get isOnboarded => _isOnboarded;
   int get intervalHours => _intervalHours;
   bool get alertSent => _alertSent;
@@ -85,13 +87,7 @@ class CheckinProvider extends ChangeNotifier {
     final ms = prefs.getInt(PrefsKeys.lastCheckIn);
     if (ms != null) _lastCheckIn = DateTime.fromMillisecondsSinceEpoch(ms);
 
-    final workerName = prefs.getString(PrefsKeys.careWorkerName);
-    final workerPhone = prefs.getString(PrefsKeys.careWorkerPhone);
-    final workerOrg = prefs.getString(PrefsKeys.careWorkerOrg);
-    if (workerName != null && workerPhone != null && workerOrg != null) {
-      _careWorker = CareWorker(
-          name: workerName, phone: workerPhone, organization: workerOrg);
-    }
+    _careWorkers = _loadCareWorkersFromPrefs(prefs);
 
     _isLoading = false;
     notifyListeners();
@@ -138,7 +134,7 @@ class CheckinProvider extends ChangeNotifier {
         await prefs.setString(PrefsKeys.userName, serverName);
       }
 
-      await _saveCareWorkerFromData(prefs, data['care_worker']);
+      await _saveCareWorkersFromData(prefs, data['care_workers']);
 
       debugPrint('[Provider] 재설치 세션 복구 완료 (iOS Keychain)');
       await WidgetService.saveToken(_serverToken!);
@@ -223,7 +219,7 @@ class CheckinProvider extends ChangeNotifier {
       }
 
       // 담당자 정보 저장
-      await _saveCareWorkerFromData(prefs, result['care_worker']);
+      await _saveCareWorkersFromData(prefs, result['care_workers']);
     } catch (e) {
       debugPrint('[API] onboarding register failed: $e');
       return false;
@@ -272,10 +268,10 @@ class CheckinProvider extends ChangeNotifier {
         }
       }
 
-      // care_worker — 서버에 등록된 담당자 정보 갱신
-      final cwData = data['care_worker'];
+      // care_workers — 서버에 등록된 담당자 정보 갱신
+      final cwData = data['care_workers'];
       if (cwData != null) {
-        await _saveCareWorkerFromData(prefs, cwData);
+        await _saveCareWorkersFromData(prefs, cwData);
         changed = true;
       }
 
@@ -316,20 +312,55 @@ class CheckinProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveCareWorkerFromData(
+  /// care_worker 필드: 단일 객체 또는 배열 모두 처리
+  Future<void> _saveCareWorkersFromData(
       SharedPreferences prefs, dynamic careWorkerData) async {
     if (careWorkerData == null) return;
-    final cw = careWorkerData as Map<String, dynamic>;
-    final name = cw['name']?.toString() ?? '';
-    final phone = cw['phone']?.toString() ?? '';
-    final org = cw['organization']?.toString() ?? '';
-    if (name.isNotEmpty) {
-      _careWorker = CareWorker(name: name, phone: phone, organization: org);
-      await prefs.setString(PrefsKeys.careWorkerName, name);
-      await prefs.setString(PrefsKeys.careWorkerPhone, phone);
-      await prefs.setString(PrefsKeys.careWorkerOrg, org);
-      notifyListeners();
+
+    List<CareWorker> workers;
+    if (careWorkerData is List) {
+      workers = careWorkerData
+          .whereType<Map<String, dynamic>>()
+          .map(CareWorker.fromJson)
+          .where((w) => w.name.isNotEmpty)
+          .toList();
+    } else if (careWorkerData is Map<String, dynamic>) {
+      final w = CareWorker.fromJson(careWorkerData);
+      workers = w.name.isNotEmpty ? [w] : [];
+    } else {
+      return;
     }
+
+    if (workers.isEmpty) return;
+    _careWorkers = workers;
+    await prefs.setString(
+      PrefsKeys.careWorkers,
+      jsonEncode(workers.map((w) => w.toJson()).toList()),
+    );
+    notifyListeners();
+  }
+
+  /// SharedPreferences에서 담당자 목록 로드 (신규 키 → 레거시 키 순서로 시도)
+  List<CareWorker> _loadCareWorkersFromPrefs(SharedPreferences prefs) {
+    final json = prefs.getString(PrefsKeys.careWorkers);
+    if (json != null) {
+      try {
+        final list = jsonDecode(json) as List;
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(CareWorker.fromJson)
+            .where((w) => w.name.isNotEmpty)
+            .toList();
+      } catch (_) {}
+    }
+    // 레거시 단일 키 마이그레이션
+    final name = prefs.getString(PrefsKeys.careWorkerName);
+    final phone = prefs.getString(PrefsKeys.careWorkerPhone) ?? '';
+    final org = prefs.getString(PrefsKeys.careWorkerOrg) ?? '';
+    if (name != null && name.isNotEmpty) {
+      return [CareWorker(name: name, phone: phone, organization: org)];
+    }
+    return [];
   }
 
   /// 체크인 모드 변경
@@ -408,20 +439,12 @@ class CheckinProvider extends ChangeNotifier {
   }
 
   Future<void> reset() async {
-    if (_serverToken != null) {
-      try {
-        await ApiService.withdraw(_serverToken!);
-      } catch (e) {
-        debugPrint('[API] withdraw failed: $e');
-      }
-    }
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     await _secure.deleteAll();
     _isOnboarded = false;
     _lastCheckIn = null;
-    _careWorker = null;
+    _careWorkers = [];
     _intervalHours = 24;
     _alertSent = false;
     _userName = '';

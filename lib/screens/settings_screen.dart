@@ -71,47 +71,53 @@ class SettingsScreen extends StatelessWidget {
 
               // ── 담당 복지사 ───────────────────────────────
               _SectionLabel(label: '담당 복지사'),
-              _Card(
-                child: provider.careWorker != null
-                    ? Column(
-                        children: [
-                          _InfoRow(
-                            icon: Icons.health_and_safety_outlined,
-                            label: '담당자 이름',
-                            value: provider.careWorker!.name,
+              if (provider.careWorkers.isEmpty)
+                _Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline,
+                            size: 18, color: AppTheme.textMedium),
+                        const SizedBox(width: 10),
+                        Text(
+                          '담당자 정보가 등록되지 않았습니다.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSubtle,
                           ),
-                          const Divider(height: 1, color: AppTheme.appInfoSep),
-                          _InfoRow(
-                            icon: Icons.business_outlined,
-                            label: '소속',
-                            value: provider.careWorker!.organization,
-                          ),
-                          if (provider.careWorker!.phone.isNotEmpty) ...[
-                            const Divider(height: 1, color: AppTheme.appInfoSep),
-                            _CallRow(
-                              phone: provider.careWorker!.phone,
-                            ),
-                          ],
-                        ],
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...provider.careWorkers.map((w) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _Card(
+                        child: Column(
                           children: [
-                            const Icon(Icons.info_outline,
-                                size: 18, color: AppTheme.textMedium),
-                            const SizedBox(width: 10),
-                            Text(
-                              '담당자 정보가 등록되지 않았습니다.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textSubtle,
-                              ),
+                            _InfoRow(
+                              icon: Icons.health_and_safety_outlined,
+                              label: '담당자 이름',
+                              value: w.name,
                             ),
+                            if (w.organization.isNotEmpty) ...[
+                              const Divider(height: 1, color: AppTheme.appInfoSep),
+                              _InfoRow(
+                                icon: Icons.business_outlined,
+                                label: '소속',
+                                value: w.organization,
+                              ),
+                            ],
+                            if (w.phone.isNotEmpty) ...[
+                              const Divider(height: 1, color: AppTheme.appInfoSep),
+                              _CallRow(phone: w.phone),
+                            ],
                           ],
                         ),
                       ),
-              ),
+                    )),
               const SizedBox(height: 24),
 
               // ── 앱 정보 ───────────────────────────────────
