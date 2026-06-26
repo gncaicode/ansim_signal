@@ -6,8 +6,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -23,6 +26,8 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
         private const val TAG = "WidgetCheckin"
         private const val API_URL = "http://ansim.gncaitech.com/api/checkin"
         private const val TOKEN_KEY = "ansim_server_token"
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private var activeJob: Job? = null
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -33,7 +38,8 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
         saveCheckinTime(context, optimisticTs)
         refreshWidgets(context)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        activeJob?.cancel()
+        activeJob = scope.launch {
             try {
                 val token = readToken(context) ?: run {
                     Log.w(TAG, "토큰 없음 — 체크인 건너뜀")
@@ -44,14 +50,16 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
                 val ts = callCheckinApi(token)
                 if (ts != null) {
                     if (ts != optimisticTs) {
-                        saveCheckinTime(context, ts)
+                        saveCheckinTime(context, ts, resetAlertSent = true)
                         refreshWidgets(context)
                     }
                     Log.d(TAG, "위젯 체크인 완료(서버 반영): $ts")
                 } else {
                     Log.w(TAG, "위젯 체크인 API 실패 — 낙관적 시간 유지")
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
                 Log.e(TAG, "위젯 체크인 오류", e)
             } finally {
                 pendingResult.finish()
@@ -95,6 +103,9 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
                 Log.w(TAG, "체크인 API 실패 $code: $errBody")
                 null
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "체크인 API 오류", e)
+            null
         } finally {
             conn?.disconnect()
         }
@@ -113,12 +124,12 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
     }
 
     /** FlutterSharedPreferences 체크인 시간 업데이트 */
-    private fun saveCheckinTime(context: Context, ts: Long) {
-        context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+    private fun saveCheckinTime(context: Context, ts: Long, resetAlertSent: Boolean = false) {
+        val editor = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             .edit()
             .putLong("flutter.last_check_in", ts)
-            .putBoolean("flutter.alert_sent", false)
-            .apply()
+        if (resetAlertSent) editor.putBoolean("flutter.alert_sent", false)
+        editor.apply()
     }
 
     /** 소형·중형 위젯 즉시 갱신 */
