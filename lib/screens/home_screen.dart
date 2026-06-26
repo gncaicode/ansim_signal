@@ -171,6 +171,19 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
+  void _showCareWorkersSheet(List<CareWorker> workers) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _CareWorkersBottomSheet(
+        workers: workers,
+        onCall: _callCareWorker,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<CheckinProvider>(
@@ -251,28 +264,26 @@ class _HomeScreenState extends State<HomeScreen>
                 // ── 담당 복지사 정보 필 ──────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: provider.careWorkers.isEmpty
-                        ? [
-                            _CareWorkerPill(
+                  child: provider.careWorkers.length >= 2
+                      ? _CareWorkerSummaryPill(
+                          workers: provider.careWorkers,
+                          onTap: () =>
+                              _showCareWorkersSheet(provider.careWorkers),
+                        )
+                      : provider.careWorkers.isEmpty
+                          ? _CareWorkerPill(
                               careWorker: null,
                               onCall: null,
                               onTap: _openSettings,
                             )
-                          ]
-                        : provider.careWorkers
-                            .map((w) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: _CareWorkerPill(
-                                    careWorker: w,
-                                    onCall: w.phone.isNotEmpty
-                                        ? () => _callCareWorker(w.phone)
-                                        : null,
-                                    onTap: _openSettings,
-                                  ),
-                                ))
-                            .toList(),
-                  ),
+                          : _CareWorkerPill(
+                              careWorker: provider.careWorkers.first,
+                              onCall: provider.careWorkers.first.phone.isNotEmpty
+                                  ? () => _callCareWorker(
+                                      provider.careWorkers.first.phone)
+                                  : null,
+                              onTap: _openSettings,
+                            ),
                 ),
 
                 const SizedBox(height: 16),
@@ -660,6 +671,118 @@ class _CareWorkerPill extends StatelessWidget {
                 size: 16,
                 color: AppTheme.textSubtle,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// 담당 복지사 요약 필 (2명 이상)
+// ────────────────────────────────────────────────────────────
+class _CareWorkerSummaryPill extends StatelessWidget {
+  final List<CareWorker> workers;
+  final VoidCallback onTap;
+
+  const _CareWorkerSummaryPill({
+    required this.workers,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: AppTheme.surfaceMuted, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: AppTheme.glowColor,
+              blurRadius: 12,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.shield_outlined, size: 18, color: AppTheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '담당 복지사 ${workers.length}명',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_up_rounded,
+                size: 20, color: AppTheme.textSubtle),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// 담당 복지사 목록 바텀 시트
+// ────────────────────────────────────────────────────────────
+class _CareWorkersBottomSheet extends StatelessWidget {
+  final List<CareWorker> workers;
+  final void Function(String phone) onCall;
+
+  const _CareWorkersBottomSheet({
+    required this.workers,
+    required this.onCall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceMuted,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '담당 복지사',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...workers.map(
+              (w) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _CareWorkerPill(
+                  careWorker: w,
+                  onCall: w.phone.isNotEmpty ? () => onCall(w.phone) : null,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ),
+            ),
           ],
         ),
       ),
