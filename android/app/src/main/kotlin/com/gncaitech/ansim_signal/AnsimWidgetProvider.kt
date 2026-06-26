@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.RemoteViews
 import java.util.Calendar
 
@@ -25,6 +26,7 @@ class AnsimWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
+        private const val TAG = "AnsimWidget"
         private const val FLUTTER_PREFS = "FlutterSharedPreferences"
 
         fun updateWidget(
@@ -45,7 +47,7 @@ class AnsimWidgetProvider : AppWidgetProvider() {
                 val status = when {
                     lastMs == 0L -> "unknown"
                     remainingMs < 0 -> "overdue"
-                    remainingMs < 8 * 3_600_000L -> "warning"
+                    remainingMs < intervalHours * 3_600_000L / 12 -> "warning"
                     else -> "safe"
                 }
 
@@ -101,7 +103,7 @@ class AnsimWidgetProvider : AppWidgetProvider() {
                 appWidgetManager.updateAppWidget(widgetId, rv)
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "위젯 업데이트 오류", e)
             }
         }
 

@@ -65,7 +65,7 @@ enum WidgetData {
 
         let status: String
         if remaining < 0             { status = "overdue" }
-        else if remaining < 8 * 3600 { status = "warning" }
+        else if remaining < Double(intervalHours) * 3600 / 12 { status = "warning" }
         else                         { status = "safe" }
 
         let timeRemainingStr: String

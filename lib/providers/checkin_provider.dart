@@ -56,8 +56,7 @@ class CheckinProvider extends ChangeNotifier {
     if (_lastCheckIn == null) return CheckinStatus.unknown;
     final remaining = timeRemaining;
     if (remaining.isNegative) return CheckinStatus.overdue;
-    // 안심시그널: 24시간 기준 → 남은 시간 8시간 이하면 주의
-    if (remaining.inHours < _intervalHours / 3) return CheckinStatus.warning;
+    if (remaining.inHours < _intervalHours / 12) return CheckinStatus.warning;
     return CheckinStatus.safe;
   }
 
