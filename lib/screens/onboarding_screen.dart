@@ -224,7 +224,6 @@ class _WelcomePage extends StatelessWidget {
           ...[
             ('🟢', '매일 안부 신호', '버튼 한 번으로 오늘 건강함을 알립니다'),
             ('🔔', '자동 알림', '미확인 시 담당 복지사에게 즉시 알림 전송'),
-            ('🔒', '개인정보 최소화', '이름과 연락처만 사용, 위치 추적 없음'),
           ].map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 18),

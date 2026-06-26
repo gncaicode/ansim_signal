@@ -233,10 +233,9 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
 
                 // ── 위급 배너 ────────────────────────────────
-                if (provider.status == CheckinStatus.overdue)
+                if (provider.status == CheckinStatus.overdue && provider.alertSent)
                   _OverdueBanner(
                     workerName: provider.careWorker?.name ?? '담당 복지사',
-                    alertSent: provider.alertSent,
                   ),
 
                 const Spacer(),
@@ -541,12 +540,8 @@ class _CheckmarkPainter extends CustomPainter {
 // ────────────────────────────────────────────────────────────
 class _OverdueBanner extends StatelessWidget {
   final String workerName;
-  final bool alertSent;
 
-  const _OverdueBanner({
-    required this.workerName,
-    required this.alertSent,
-  });
+  const _OverdueBanner({required this.workerName});
 
   @override
   Widget build(BuildContext context) {
@@ -564,9 +559,7 @@ class _OverdueBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              alertSent
-                  ? '$workerName님께 알림을 발송했습니다.'
-                  : '$workerName님께 알림을 발송 중...',
+              '$workerName님께 알림을 발송했습니다.',
               style: const TextStyle(
                 color: AppTheme.dangerFg,
                 fontSize: 14,

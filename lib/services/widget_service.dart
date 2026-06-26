@@ -47,7 +47,7 @@ class WidgetService {
       await HomeWidget.saveWidgetData('ansim_interval_hours', intervalHours);
       if (lastCheckIn != null) {
         await HomeWidget.saveWidgetData(
-            'ansim_last_checkin_ms', lastCheckIn.millisecondsSinceEpoch);
+            'ansim_last_checkin_ms', lastCheckIn.millisecondsSinceEpoch.toString());
       }
 
       // 위젯 갱신 트리거

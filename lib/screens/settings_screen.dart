@@ -28,31 +28,6 @@ class SettingsScreen extends StatelessWidget {
             child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
             children: [
-              // ── 내 정보 ───────────────────────────────────
-              _SectionLabel(label: '내 정보'),
-              _Card(
-                child: Column(
-                  children: [
-                    _InfoRow(
-                      icon: Icons.person_outline,
-                      label: '이름',
-                      value: provider.userName.isEmpty
-                          ? '이름 미설정'
-                          : provider.userName,
-                    ),
-                    const Divider(height: 1, color: AppTheme.appInfoSep),
-                    _InfoRow(
-                      icon: Icons.schedule_rounded,
-                      label: '마지막 신호',
-                      value: provider.lastCheckIn != null
-                          ? _formatDateTime(provider.lastCheckIn!)
-                          : '아직 신호 없음',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // ── 체크인 방식 ───────────────────────────────
               _SectionLabel(label: '체크인 방식'),
               _CheckinModeCard(
@@ -219,13 +194,6 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  static String _formatDateTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return '방금 전';
-    if (diff.inHours < 1) return '${diff.inMinutes}분 전';
-    if (diff.inHours < 24) return '${diff.inHours}시간 전';
-    return '${dt.month}월 ${dt.day}일 ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 // ── 섹션 레이블 ─────────────────────────────────────────────

@@ -407,22 +407,6 @@ class CheckinProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// [테스트용] 마지막 체크인 시간을 지정한 시간 전으로 설정
-  Future<void> setLastCheckInHoursAgo(int hours) async {
-    final prefs = await SharedPreferences.getInstance();
-    _lastCheckIn = DateTime.now().subtract(Duration(hours: hours));
-    _alertSent = false;
-    await prefs.setInt(PrefsKeys.lastCheckIn, _lastCheckIn!.millisecondsSinceEpoch);
-    await prefs.setBool(PrefsKeys.alertSent, false);
-    notifyListeners();
-    await WidgetService.update(
-      status: status,
-      lastCheckIn: _lastCheckIn,
-      timeRemaining: timeRemaining,
-      intervalHours: _intervalHours,
-    );
-  }
-
   static int? _parseInt(dynamic value) {
     if (value is int) return value;
     if (value is double) return value.toInt();
