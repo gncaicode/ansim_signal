@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,8 +9,9 @@ plugins {
 }
 
 val keyPropertiesFile = rootProject.file("key.properties")
-val keyProperties = java.util.Properties().apply {
-    if (keyPropertiesFile.exists()) load(keyPropertiesFile.inputStream())
+val keyProperties = Properties()
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
 android {
@@ -20,7 +24,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    
+
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
 
