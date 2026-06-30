@@ -71,8 +71,36 @@ class BackgroundService {
       await NotificationService.showReminderNotification(remaining.inHours);
     }
 
-    // ── 위젯 업데이트 ───────────────────────────────────────────
+    // ── 서버 상태 동기화 후 위젯 업데이트 ─────────────────────
     await WidgetService.initialize();
+    try {
+      const secure = FlutterSecureStorage();
+      final token = await secure.read(key: _kServerToken);
+      if (token != null) {
+        final data = await ApiService.getStatus(token);
+
+        final serverCheckinStr = data['last_checkin_at']?.toString();
+        if (serverCheckinStr != null) {
+          final serverCheckin = DateTime.parse(serverCheckinStr).toLocal();
+          final localMs = prefs.getInt(PrefsKeys.lastCheckIn);
+          final localCheckin = localMs != null
+              ? DateTime.fromMillisecondsSinceEpoch(localMs)
+              : null;
+          if (localCheckin == null || serverCheckin.isAfter(localCheckin)) {
+            await prefs.setInt(
+                PrefsKeys.lastCheckIn, serverCheckin.millisecondsSinceEpoch);
+          }
+        }
+
+        final serverAlertSent = data['alert_sent'] == true;
+        if (serverAlertSent) {
+          await prefs.setBool(PrefsKeys.alertSent, true);
+        }
+      }
+    } catch (e) {
+      // 서버 조회 실패 시 로컬 데이터로 fallback
+    }
+
     final wMs = prefs.getInt(PrefsKeys.lastCheckIn);
     if (wMs != null) {
       final wLastCheckIn = DateTime.fromMillisecondsSinceEpoch(wMs);

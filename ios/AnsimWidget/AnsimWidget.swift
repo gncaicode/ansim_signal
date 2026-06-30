@@ -119,9 +119,69 @@ struct AnsimProvider: TimelineProvider {
         completion(WidgetData.load())
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<AnsimEntry>) -> Void) {
-        let e    = WidgetData.load()
-        let next = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
-        completion(Timeline(entries: [e], policy: .after(next)))
+        let defaults = UserDefaults(suiteName: kAppGroup)
+        let intervalHours = defaults?.integer(forKey: "ansim_interval_hours") ?? 24
+        let lastCheckinMs = defaults?.object(forKey: "ansim_last_checkin_ms") as? Int64 ?? 0
+
+        var entries: [AnsimEntry] = []
+        let now = Date()
+
+        // 15분 간격으로 4개 항목 생성 (현재 ~ 1시간)
+        for i in 0..<4 {
+            let entryDate = Calendar.current.date(byAdding: .minute, value: i * 15, to: now) ?? now
+            let lastCheckIn = lastCheckinMs > 0
+                ? Date(timeIntervalSince1970: Double(lastCheckinMs) / 1000)
+                : nil
+
+            let remaining: TimeInterval
+            if let lc = lastCheckIn {
+                let deadline = lc.addingTimeInterval(Double(intervalHours) * 3600)
+                remaining = deadline.timeIntervalSince(entryDate)
+            } else {
+                remaining = 0
+            }
+
+            let status: String
+            if lastCheckIn == nil       { status = "unknown" }
+            else if remaining < 0       { status = "overdue" }
+            else if remaining < Double(intervalHours) * 3600 / 12 { status = "warning" }
+            else                        { status = "safe" }
+
+            let timeRemainingStr: String
+            if lastCheckIn == nil {
+                timeRemainingStr = "--"
+            } else if remaining < 0 {
+                let h = Int(-remaining / 3600)
+                timeRemainingStr = h > 0 ? "\(h)시간 초과" : "초과됨"
+            } else if remaining >= 3600 {
+                timeRemainingStr = "\(Int(remaining / 3600))시간 남음"
+            } else {
+                timeRemainingStr = "\(Int(remaining / 60))분 남음"
+            }
+
+            let lastCheckinStr: String
+            if let lc = lastCheckIn {
+                let cal = Calendar.current
+                let h = cal.component(.hour, from: lc)
+                let m = cal.component(.minute, from: lc)
+                let period   = h < 12 ? "오전" : "오후"
+                let displayH = h == 0 ? 12 : h > 12 ? h - 12 : h
+                lastCheckinStr = "\(period) \(displayH):\(String(format: "%02d", m))"
+            } else {
+                lastCheckinStr = "--"
+            }
+
+            entries.append(AnsimEntry(
+                date: entryDate,
+                status: status,
+                lastCheckin: lastCheckinStr,
+                timeRemaining: timeRemainingStr
+            ))
+        }
+
+        // 15분 후 새 타임라인 요청
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now
+        completion(Timeline(entries: entries, policy: .after(nextUpdate)))
     }
 }
 

@@ -96,14 +96,18 @@ class CheckinProvider extends ChangeNotifier {
       await WidgetService.saveToken(_serverToken!);
     }
 
-    await WidgetService.update(
-      status: status,
-      lastCheckIn: _lastCheckIn,
-      timeRemaining: timeRemaining,
-      intervalHours: _intervalHours,
-    );
-
-    await syncFromServer();
+    if (_serverToken != null) {
+      // 서버 동기화 완료 후 위젯 업데이트 (syncFromServer 내부 finally에서 처리)
+      await syncFromServer();
+    } else {
+      // 토큰 없는 경우 로컬 캐시 기준으로 위젯 업데이트
+      await WidgetService.update(
+        status: status,
+        lastCheckIn: _lastCheckIn,
+        timeRemaining: timeRemaining,
+        intervalHours: _intervalHours,
+      );
+    }
   }
 
   Future<bool> _tryRecoverSession(SharedPreferences prefs) async {
@@ -300,14 +304,15 @@ class CheckinProvider extends ChangeNotifier {
       }
 
       if (changed) notifyListeners();
+    } catch (e) {
+      debugPrint('[API] syncFromServer failed: $e');
+    } finally {
       await WidgetService.update(
         status: status,
         lastCheckIn: _lastCheckIn,
         timeRemaining: timeRemaining,
         intervalHours: _intervalHours,
       );
-    } catch (e) {
-      debugPrint('[API] syncFromServer failed: $e');
     }
   }
 
