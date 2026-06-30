@@ -221,9 +221,8 @@ class CheckinProvider extends ChangeNotifier {
         await prefs.setString(PrefsKeys.userName, serverName);
       }
 
-      // 담당자 정보 저장 (서버 응답 키가 단수/복수 모두 처리)
-      await _saveCareWorkersFromData(
-          prefs, result['care_workers'] ?? result['care_worker']);
+      // 담당자 정보 저장
+      await _saveCareWorkersFromData(prefs, result['care_workers']);
     } catch (e) {
       debugPrint('[API] onboarding register failed: $e');
       return false;
