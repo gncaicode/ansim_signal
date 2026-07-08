@@ -50,6 +50,9 @@ class _HomeScreenState extends State<HomeScreen>
       if (mounted) setState(() {});
     });
 
+    // 최초 진입 시에도 서버 동기화
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncData());
+
     // Glow ring breathe
     _glowCtrl = AnimationController(
       vsync: this,
@@ -118,14 +121,21 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _onResume() async {
+  Future<void> _syncData() async {
     if (!mounted) return;
-    setState(() => _isChecked = false);
     final provider = context.read<CheckinProvider>();
     await provider.syncFromPrefs();
     await provider.syncFromServer();
+  }
+
+
+  Future<void> _onResume() async {
+    if (!mounted) return;
+    setState(() => _isChecked = false);
+    await _syncData();
 
     // appOpen 모드: 앱 포그라운드 진입 시 자동 체크인
+    final provider = context.read<CheckinProvider>();
     if (provider.checkinMode == CheckinMode.appOpen) {
       await provider.autoCheckIn();
       if (mounted) setState(() => _isChecked = true);
