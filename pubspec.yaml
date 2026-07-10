@@ -1,7 +1,7 @@
 name: ansim_signal
 description: "1인 가구·독거노인 안부 신호 앱 - 안심시그널"
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.1+3
 
 environment:
   sdk: ^3.11.4
