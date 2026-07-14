@@ -50,8 +50,8 @@ class _HomeScreenState extends State<HomeScreen>
       if (mounted) setState(() {});
     });
 
-    // 최초 진입 시에도 서버 동기화
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncData());
+    // 최초 진입(콜드 스타트) 시에도 서버 동기화 + appOpen 자동 체크인
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onResume());
 
     // Glow ring breathe
     _glowCtrl = AnimationController(
