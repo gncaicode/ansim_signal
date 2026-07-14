@@ -69,21 +69,6 @@ class ApiService {
     throw Exception('getStatus failed: ${res.statusCode}');
   }
 
-  /// 안부 주기 변경
-  static Future<void> updateSettings(String token, int intervalHours) async {
-    final res = await http
-        .patch(
-          Uri.parse('$baseUrl/settings'),
-          headers: _headers(token),
-          body: jsonEncode({'interval_hours': intervalHours}),
-        )
-        .timeout(_timeout);
-
-    if (res.statusCode != 200) {
-      throw Exception('updateSettings failed: ${res.statusCode}');
-    }
-  }
-
   /// 회원 탈퇴
   static Future<void> withdraw(String token) async {
     final res = await http

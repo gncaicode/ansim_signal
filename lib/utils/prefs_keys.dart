@@ -10,5 +10,4 @@ class PrefsKeys {
   static const careWorkerOrg     = 'care_worker_org';
   static const lastOverdueNotif  = 'last_overdue_notif_ms';
   static const checkinMode       = 'checkin_mode';
-  static const intervalSetByUser = 'interval_set_by_user';
 }

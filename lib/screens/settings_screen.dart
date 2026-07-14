@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,18 +29,14 @@ class SettingsScreen extends StatelessWidget {
             children: [
               // ── 체크인 방식 ───────────────────────────────
               _SectionLabel(label: '체크인 방식'),
-              _CheckinModeCard(
-                current: provider.checkinMode,
-                onChanged: (mode) => provider.setCheckinMode(mode),
-              ),
+              _CheckinModeCard(current: provider.checkinMode),
+              const _AdminManagedNote(),
               const SizedBox(height: 24),
 
               // ── 체크인 주기 ───────────────────────────────
               _SectionLabel(label: '체크인 주기'),
-              _IntervalCard(
-                current: provider.intervalHours,
-                onChanged: (h) => provider.setIntervalHours(h),
-              ),
+              _IntervalCard(current: provider.intervalHours),
+              const _AdminManagedNote(),
               const SizedBox(height: 24),
 
               // ── 담당 복지사 ───────────────────────────────
@@ -244,6 +239,28 @@ class _Card extends StatelessWidget {
   }
 }
 
+// ── 관리자 설정 안내 문구 ───────────────────────────────────
+class _AdminManagedNote extends StatelessWidget {
+  const _AdminManagedNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 4),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 13, color: AppTheme.textSubtle),
+          const SizedBox(width: 4),
+          Text(
+            '담당 기관에서 설정합니다.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSubtle),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── 정보 행 (읽기 전용) ────────────────────────────────────────
 class _InfoRow extends StatelessWidget {
   final IconData icon;
@@ -439,15 +456,11 @@ class _IosPassiveNote extends StatelessWidget {
   }
 }
 
-// ── 체크인 방식 선택 카드 ───────────────────────────────────
+// ── 체크인 방식 표시 카드 (읽기 전용, 관리자가 설정) ─────────
 class _CheckinModeCard extends StatelessWidget {
   final CheckinMode current;
-  final ValueChanged<CheckinMode> onChanged;
 
-  const _CheckinModeCard({
-    required this.current,
-    required this.onChanged,
-  });
+  const _CheckinModeCard({required this.current});
 
   static const _modes = [
     (
@@ -472,6 +485,7 @@ class _CheckinModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final item = _modes.firstWhere((m) => m.mode == current);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.card,
@@ -485,96 +499,48 @@ class _CheckinModeCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: _modes
-            .where((m) => !(Platform.isIOS && m.mode == CheckinMode.passive))
-            .toList()
-            .indexed
-            .map((entry) {
-          final i = entry.$1;
-          final item = entry.$2;
-          final selected = current == item.mode;
-          final visibleModes = _modes
-              .where((m) => !(Platform.isIOS && m.mode == CheckinMode.passive))
-              .toList();
-          final isLast = i == visibleModes.length - 1;
-
-          return Column(
-            children: [
-              InkWell(
-                onTap: () => onChanged(item.mode),
-                borderRadius: BorderRadius.vertical(
-                  top: i == 0 ? const Radius.circular(16) : Radius.zero,
-                  bottom: isLast ? const Radius.circular(16) : Radius.zero,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppTheme.primary
-                              : AppTheme.iconBg,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          item.icon,
-                          size: 20,
-                          color: selected
-                              ? Colors.white
-                              : AppTheme.textMedium,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: selected
-                                    ? AppTheme.primary
-                                    : AppTheme.textDark,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item.desc,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textSubtle,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        selected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded,
-                        size: 22,
-                        color: selected
-                            ? AppTheme.primary
-                            : AppTheme.textSubtle,
-                      ),
-                    ],
-                  ),
-                ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(12),
               ),
-              if (!isLast)
-                const Divider(height: 1, color: AppTheme.appInfoSep),
-            ],
-          );
-        }).toList(),
+              child: Icon(item.icon, size: 20, color: Colors.white),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.desc,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSubtle,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.lock_outline_rounded, size: 18, color: AppTheme.textSubtle),
+          ],
+        ),
       ),
     );
   }
@@ -583,9 +549,7 @@ class _CheckinModeCard extends StatelessWidget {
 // ── 체크인 주기 선택 카드 ───────────────────────────────────
 class _IntervalCard extends StatelessWidget {
   final int current;
-  final ValueChanged<int> onChanged;
-
-  const _IntervalCard({required this.current, required this.onChanged});
+  const _IntervalCard({required this.current});
 
   @override
   Widget build(BuildContext context) {
@@ -605,21 +569,17 @@ class _IntervalCard extends StatelessWidget {
       child: Row(
         children: [
           _IntervalOption(
-            hours: 12,
             label: '12시간',
             desc: '하루 2회',
             selected: current == 12,
             isFirst: true,
-            onTap: () => onChanged(12),
           ),
           Container(width: 1, height: 72, color: AppTheme.appInfoSep),
           _IntervalOption(
-            hours: 24,
             label: '24시간',
             desc: '하루 1회',
             selected: current == 24,
             isFirst: false,
-            onTap: () => onChanged(24),
           ),
         ],
       ),
@@ -628,68 +588,57 @@ class _IntervalCard extends StatelessWidget {
 }
 
 class _IntervalOption extends StatelessWidget {
-  final int hours;
   final String label;
   final String desc;
   final bool selected;
   final bool isFirst;
-  final VoidCallback onTap;
 
   const _IntervalOption({
-    required this.hours,
     required this.label,
     required this.desc,
     required this.selected,
     required this.isFirst,
-    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.horizontal(
-          left: isFirst ? const Radius.circular(16) : Radius.zero,
-          right: isFirst ? Radius.zero : const Radius.circular(16),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: selected ? AppTheme.iconBg : Colors.transparent,
-            borderRadius: BorderRadius.horizontal(
-              left: isFirst ? const Radius.circular(16) : Radius.zero,
-              right: isFirst ? Radius.zero : const Radius.circular(16),
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.iconBg : Colors.transparent,
+          borderRadius: BorderRadius.horizontal(
+            left: isFirst ? const Radius.circular(16) : Radius.zero,
+            right: isFirst ? Radius.zero : const Radius.circular(16),
           ),
-          child: Column(
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: selected ? AppTheme.primary : AppTheme.textMedium,
-                ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: selected ? AppTheme.primary : AppTheme.textMedium,
               ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: selected ? AppTheme.primary : AppTheme.textSubtle,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Icon(
-                selected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              desc,
+              style: TextStyle(
+                fontSize: 12,
                 color: selected ? AppTheme.primary : AppTheme.textSubtle,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_off_rounded,
+              size: 20,
+              color: selected ? AppTheme.primary : AppTheme.textSubtle,
+            ),
+          ],
         ),
       ),
     );

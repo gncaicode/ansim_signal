@@ -122,6 +122,10 @@ class CheckinProvider extends ChangeNotifier {
       _intervalHours = serverInterval ?? 24;
       await prefs.setInt(PrefsKeys.intervalHours, _intervalHours);
 
+      final serverModeStr = data['checkin_mode']?.toString();
+      _checkinMode = _modeFromString(serverModeStr);
+      await prefs.setString(PrefsKeys.checkinMode, _checkinMode.name);
+
       final serverCheckinStr = data['last_checkin_at']?.toString();
       if (serverCheckinStr != null) {
         _lastCheckIn = DateTime.parse(serverCheckinStr).toLocal();
@@ -260,13 +264,21 @@ class CheckinProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       bool changed = false;
 
-      // interval_hours — 사용자가 직접 설정한 경우 서버 값 무시
-      final userSetInterval = prefs.getBool(PrefsKeys.intervalSetByUser) ?? false;
-      if (!userSetInterval) {
-        final serverInterval = _parseInt(data['interval_hours']);
-        if (serverInterval != null && serverInterval != _intervalHours) {
-          _intervalHours = serverInterval;
-          await prefs.setInt(PrefsKeys.intervalHours, serverInterval);
+      // interval_hours — 관리자가 서버에서 설정, 항상 서버 값을 따른다
+      final serverInterval = _parseInt(data['interval_hours']);
+      if (serverInterval != null && serverInterval != _intervalHours) {
+        _intervalHours = serverInterval;
+        await prefs.setInt(PrefsKeys.intervalHours, serverInterval);
+        changed = true;
+      }
+
+      // checkin_mode — 관리자가 서버에서 설정, 항상 서버 값을 따른다
+      final serverModeStr = data['checkin_mode']?.toString();
+      if (serverModeStr != null) {
+        final serverMode = _modeFromString(serverModeStr);
+        if (serverMode != _checkinMode) {
+          _checkinMode = serverMode;
+          await prefs.setString(PrefsKeys.checkinMode, serverMode.name);
           changed = true;
         }
       }
@@ -365,31 +377,6 @@ class CheckinProvider extends ChangeNotifier {
       return [CareWorker(name: name, phone: phone, organization: org)];
     }
     return [];
-  }
-
-  /// 체크인 모드 변경
-  Future<void> setCheckinMode(CheckinMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    _checkinMode = mode;
-    await prefs.setString(PrefsKeys.checkinMode, mode.name);
-    notifyListeners();
-  }
-
-  /// 체크인 주기 변경 (12 or 24시간)
-  Future<void> setIntervalHours(int hours) async {
-    final prefs = await SharedPreferences.getInstance();
-    _intervalHours = hours;
-    await prefs.setInt(PrefsKeys.intervalHours, hours);
-    await prefs.setBool(PrefsKeys.intervalSetByUser, true);
-    notifyListeners();
-
-    if (_serverToken != null) {
-      try {
-        await ApiService.updateSettings(_serverToken!, hours);
-      } catch (e) {
-        debugPrint('[API] updateSettings failed: $e');
-      }
-    }
   }
 
   /// 앱 열 때 / 폰 사용 시 자동 체크인 (다음 마감 전까지 중복 방지)
