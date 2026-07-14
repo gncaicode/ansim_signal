@@ -74,6 +74,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- 재부팅/앱 업데이트 시 Significant Motion 센서 재등록 -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <!-- 홈 위젯 (소형 2×2) -->
         <receiver
             android:name=".AnsimWidgetProvider"
