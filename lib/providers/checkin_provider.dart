@@ -196,6 +196,18 @@ class CheckinProvider extends ChangeNotifier {
     );
   }
 
+  /// 연결 확인 — 서버로 테스트 신호만 전송, 안부신호 상태는 건드리지 않음
+  Future<bool> sendTestConnection() async {
+    if (_serverToken == null) return false;
+    try {
+      await ApiService.testConnection(_serverToken!);
+      return true;
+    } catch (e) {
+      debugPrint('[API] testConnection failed: $e');
+      return false;
+    }
+  }
+
   Future<void> saveUserName(String name) async {
     final prefs = await SharedPreferences.getInstance();
     _userName = name;

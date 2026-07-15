@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
@@ -88,6 +89,11 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     )),
+              const SizedBox(height: 24),
+
+              // ── 설정 확인 ─────────────────────────────────
+              _SectionLabel(label: '설정 확인'),
+              const _TestConnectionCard(),
               const SizedBox(height: 24),
 
               // ── 앱 정보 ───────────────────────────────────
@@ -296,6 +302,95 @@ class _InfoRow extends StatelessWidget {
               fontSize: 14,
               color: AppTheme.textMedium,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 설정 확인 카드 ───────────────────────────────────────────
+class _TestConnectionCard extends StatefulWidget {
+  const _TestConnectionCard();
+
+  @override
+  State<_TestConnectionCard> createState() => _TestConnectionCardState();
+}
+
+class _TestConnectionCardState extends State<_TestConnectionCard> {
+  bool _isSending = false;
+
+  Future<void> _send() async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+    HapticFeedback.mediumImpact();
+
+    final provider = context.read<CheckinProvider>();
+    final success = await provider.sendTestConnection();
+
+    if (!mounted) return;
+    setState(() => _isSending = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? '테스트 신호를 보냈습니다. 관리자 화면에서 확인해보세요.'
+            : '전송에 실패했습니다. 네트워크 연결을 확인해주세요.'),
+        backgroundColor: success ? AppTheme.primary : AppTheme.dangerRed,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '서버 연결 상태를 확인합니다.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '관리자 화면에 확인 시각이 표시됩니다.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSubtle),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _isSending ? null : _send,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: _isSending
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    '설정 확인',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
           ),
         ],
       ),

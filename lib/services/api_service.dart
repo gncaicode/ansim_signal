@@ -69,6 +69,20 @@ class ApiService {
     throw Exception('getStatus failed: ${res.statusCode}');
   }
 
+  /// 연결 확인 — 실제 체크인과 무관한 테스트 신호 (last_checkin_at에 영향 없음)
+  static Future<void> testConnection(String token) async {
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/checkin/test-connection'),
+          headers: _headers(token),
+        )
+        .timeout(_timeout);
+
+    if (res.statusCode != 200) {
+      throw Exception('testConnection failed: ${res.statusCode}');
+    }
+  }
+
   /// 회원 탈퇴
   static Future<void> withdraw(String token) async {
     final res = await http
