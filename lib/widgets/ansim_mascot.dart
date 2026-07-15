@@ -52,20 +52,23 @@ class _ShieldPainter extends CustomPainter {
 
     canvas.drawPath(shieldPath, Paint()..color = color);
 
-    // 방패 안 체크마크
-    final checkPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.40)
+    // 방패 안 심전도 파형 (앱 아이콘과 동일한 브랜드 심볼)
+    final heartbeatPaint = Paint()
+      ..color = const Color(0xFF16A34A)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
+      ..strokeWidth = 7
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final checkPath = Path()
-      ..moveTo(33, 50)
-      ..lineTo(45, 63)
-      ..lineTo(68, 37);
+    final heartbeatPath = Path()
+      ..moveTo(32.5, 49)
+      ..lineTo(41.25, 49)
+      ..lineTo(45.625, 38.0625)
+      ..lineTo(54.375, 59.9375)
+      ..lineTo(58.75, 49)
+      ..lineTo(67.5, 49);
 
-    canvas.drawPath(checkPath, checkPaint);
+    canvas.drawPath(heartbeatPath, heartbeatPaint);
 
     // 광택
     canvas.drawCircle(
