@@ -9,11 +9,11 @@
         android:pathData="M50,10 L85,22 C85,22 85,62 50,88 C15,62 15,22 15,22 Z"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.9" />
-    <!-- Checkmark -->
+    <!-- Heartbeat waveform -->
     <path
-        android:pathData="M33,50 L45,63 L68,37"
-        android:strokeColor="#2563EB"
-        android:strokeWidth="5"
+        android:pathData="M32.5,49 L41.25,49 L45.625,38.0625 L54.375,59.9375 L58.75,49 L67.5,49"
+        android:strokeColor="#16A34A"
+        android:strokeWidth="7"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="@android:color/transparent" />

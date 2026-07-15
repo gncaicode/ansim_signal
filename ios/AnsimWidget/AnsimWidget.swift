@@ -191,6 +191,7 @@ extension Color {
     static let navyStart = Color(red: 37/255,  green: 99/255,  blue: 235/255)
     static let navyEnd   = Color(red: 30/255,  green: 58/255,  blue: 138/255)
     static let widgetBg  = Color(red: 239/255, green: 244/255, blue: 255/255)
+    static let heartbeatGreen = Color(red: 22/255, green: 163/255, blue: 74/255)
 
     static func statusDot(_ s: String) -> Color {
         switch s {
@@ -234,11 +235,14 @@ struct ShieldIcon: View {
 
             Path { p in
                 let s = size
-                p.move(to: CGPoint(x: s*0.33, y: s*0.50))
-                p.addLine(to: CGPoint(x: s*0.45, y: s*0.63))
-                p.addLine(to: CGPoint(x: s*0.68, y: s*0.37))
+                p.move(to: CGPoint(x: s*0.325, y: s*0.49))
+                p.addLine(to: CGPoint(x: s*0.4125, y: s*0.49))
+                p.addLine(to: CGPoint(x: s*0.45625, y: s*0.380625))
+                p.addLine(to: CGPoint(x: s*0.54375, y: s*0.599375))
+                p.addLine(to: CGPoint(x: s*0.5875, y: s*0.49))
+                p.addLine(to: CGPoint(x: s*0.675, y: s*0.49))
             }
-            .stroke(Color.navyStart,
+            .stroke(Color.heartbeatGreen,
                     style: StrokeStyle(lineWidth: size*0.07, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
         }
