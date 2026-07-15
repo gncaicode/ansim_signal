@@ -138,7 +138,10 @@ class _HomeScreenState extends State<HomeScreen>
     final provider = context.read<CheckinProvider>();
     if (provider.checkinMode == CheckinMode.appOpen) {
       await provider.autoCheckIn();
-      if (mounted) setState(() => _isChecked = true);
+      if (mounted) {
+        setState(() => _isChecked = true);
+        _checkCtrl.forward(from: 0);
+      }
       await Future.delayed(const Duration(milliseconds: 2000));
       if (mounted) setState(() => _isChecked = false);
     }
