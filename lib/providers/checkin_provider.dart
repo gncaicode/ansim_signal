@@ -391,10 +391,9 @@ class CheckinProvider extends ChangeNotifier {
     return [];
   }
 
-  /// 앱 열 때 / 폰 사용 시 자동 체크인 (다음 마감 전까지 중복 방지)
+  /// 앱을 열 때 자동 체크인 (appOpen 모드) — 마감 전이어도 매번 새로 전송
   Future<void> autoCheckIn() async {
     if (_serverToken == null) return;
-    if (_lastCheckIn != null && !timeRemaining.isNegative) return;
     await checkIn();
   }
 
