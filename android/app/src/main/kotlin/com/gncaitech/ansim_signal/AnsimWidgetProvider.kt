@@ -78,7 +78,9 @@ class AnsimWidgetProvider : AppWidgetProvider() {
 
                 // 버튼 밖 탭 → 앱 열기
                 val appIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 }
                 val appPendingIntent = PendingIntent.getActivity(
                     context, widgetId * 10 + 1, appIntent,
