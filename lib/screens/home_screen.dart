@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart'; // CheckinStatus, CheckinMode
 import '../providers/checkin_provider.dart';
-import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ansim_mascot.dart';
 import '../widgets/status_card.dart';
@@ -154,7 +153,6 @@ class _HomeScreenState extends State<HomeScreen>
 
     final provider = context.read<CheckinProvider>();
     await provider.checkIn();
-    await NotificationService.showCheckInSuccessNotification();
 
     if (!mounted) return;
     setState(() {

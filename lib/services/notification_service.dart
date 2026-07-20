@@ -67,21 +67,6 @@ class NotificationService {
     );
   }
 
-  /// 안부 신호 전송 완료
-  static Future<void> showCheckInSuccessNotification() async {
-    await _plugin.show(
-      3,
-      '안부 신호 전송 완료',
-      '오늘의 안부 신호를 담당자에게 전달했습니다.',
-      _notificationDetails(
-        channelId: 'success',
-        channelName: '안부 신호 완료',
-        color: const Color(0xFF4CAF50),
-        importance: Importance.low,
-      ),
-    );
-  }
-
   /// 초과 후 6시간마다 반복 경고
   static Future<void> showOverdueReminderNotification({
     required int hoursOverdue,
