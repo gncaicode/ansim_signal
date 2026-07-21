@@ -38,11 +38,15 @@ class NotificationService {
   }
 
   /// 안부 신호 마감 임박 알림 (24시간 기준 6시간 전)
-  static Future<void> showReminderNotification(int hoursLeft) async {
+  static Future<void> showReminderNotification(Duration remaining) async {
+    final hours = remaining.inHours;
+    final body = hours > 0
+        ? '$hours시간 안에 안부 신호를 전송해 주세요.'
+        : '${remaining.inMinutes}분 안에 안부 신호를 전송해 주세요.';
     await _plugin.show(
       1,
       '오늘 안부 신호를 보내주세요',
-      '$hoursLeft시간 안에 안부 신호를 전송해 주세요.',
+      body,
       _notificationDetails(
         channelId: 'reminder',
         channelName: '안부 알림',
@@ -69,12 +73,22 @@ class NotificationService {
 
   /// 초과 후 6시간마다 반복 경고
   static Future<void> showOverdueReminderNotification({
-    required int hoursOverdue,
+    required Duration overdue,
   }) async {
+    final hours = overdue.inHours;
+    final minutes = overdue.inMinutes.remainder(60);
+    final String body;
+    if (hours > 0) {
+      body = '$hours시간 $minutes분째 마감을 넘겼습니다. 지금 바로 전송해 주세요.';
+    } else if (minutes > 0) {
+      body = '$minutes분째 마감을 넘겼습니다. 지금 바로 전송해 주세요.';
+    } else {
+      body = '방금 마감을 넘겼습니다. 지금 바로 전송해 주세요.';
+    }
     await _plugin.show(
       6,
       '안부 신호 미확인 중',
-      '$hoursOverdue시간째 안부 신호가 없습니다. 지금 바로 전송해 주세요.',
+      body,
       _notificationDetails(
         channelId: 'alert',
         channelName: '긴급 알림',

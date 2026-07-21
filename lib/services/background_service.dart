@@ -57,18 +57,18 @@ class BackgroundService {
     final remaining = Duration(hours: intervalHours) - elapsed;
 
     if (remaining.isNegative) {
-      final hoursOverdue = elapsed.inHours;
+      final overdue = remaining.abs();
       final lastOverdueNotif = prefs.getInt(PrefsKeys.lastOverdueNotif) ?? 0;
       final sinceLastNotif = DateTime.now().difference(
           DateTime.fromMillisecondsSinceEpoch(lastOverdueNotif));
       if (sinceLastNotif.inHours >= 6) {
         await NotificationService.showOverdueReminderNotification(
-            hoursOverdue: hoursOverdue);
+            overdue: overdue);
         await prefs.setInt(
             PrefsKeys.lastOverdueNotif, DateTime.now().millisecondsSinceEpoch);
       }
     } else if (remaining.inHours <= 6) {
-      await NotificationService.showReminderNotification(remaining.inHours);
+      await NotificationService.showReminderNotification(remaining);
     }
 
     // ── 서버 상태 동기화 후 위젯 업데이트 ─────────────────────
