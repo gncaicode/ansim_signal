@@ -57,7 +57,7 @@ class BackgroundService {
     final remaining = Duration(hours: intervalHours) - elapsed;
 
     if (remaining.isNegative) {
-      final hoursOverdue = elapsed.inHours - intervalHours;
+      final hoursOverdue = elapsed.inHours;
       final lastOverdueNotif = prefs.getInt(PrefsKeys.lastOverdueNotif) ?? 0;
       final sinceLastNotif = DateTime.now().difference(
           DateTime.fromMillisecondsSinceEpoch(lastOverdueNotif));
