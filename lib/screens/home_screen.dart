@@ -297,7 +297,10 @@ class _HomeScreenState extends State<HomeScreen>
                                   ? () => _callCareWorker(
                                       provider.careWorkers.first.phone)
                                   : null,
-                              onTap: _openSettings,
+                              onTap: provider.careWorkers.first.phone.isNotEmpty
+                                  ? () => _callCareWorker(
+                                      provider.careWorkers.first.phone)
+                                  : _openSettings,
                             ),
                 ),
 
@@ -773,13 +776,27 @@ class _CareWorkersBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '담당 복지사',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
-              ),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '담당 복지사',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded,
+                      color: AppTheme.textSubtle),
+                  tooltip: '닫기',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             ...workers.map(
@@ -788,7 +805,9 @@ class _CareWorkersBottomSheet extends StatelessWidget {
                 child: _CareWorkerPill(
                   careWorker: w,
                   onCall: w.phone.isNotEmpty ? () => onCall(w.phone) : null,
-                  onTap: () => Navigator.pop(context),
+                  onTap: w.phone.isNotEmpty
+                      ? () => onCall(w.phone)
+                      : () => Navigator.pop(context),
                 ),
               ),
             ),
