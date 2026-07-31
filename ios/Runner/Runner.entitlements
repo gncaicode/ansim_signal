@@ -8,5 +8,9 @@
 	<array>
 		<string>group.com.gncaitech.ansim_signal</string>
 	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:www.edcsystem.kr</string>
+	</array>
 </dict>
 </plist>

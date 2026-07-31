@@ -8,7 +8,11 @@ import '../widgets/ansim_mascot.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  /// 딥링크(초대코드 링크)로 진입한 경우 미리 채워둘 초대코드.
+  /// 자동 제출은 하지 않고, 입력칸만 채운 뒤 사용자가 직접 등록 버튼을 누르게 한다.
+  final String? initialInviteCode;
+
+  const OnboardingScreen({super.key, this.initialInviteCode});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -22,6 +26,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Page 1 – 초대코드
   final _inviteCodeCtrl = TextEditingController();
   final _inviteFormKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    final code = widget.initialInviteCode;
+    if (code != null && code.isNotEmpty) {
+      _inviteCodeCtrl.text = code;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _pageCtrl.jumpToPage(1);
+      });
+    }
+  }
 
   @override
   void dispose() {
