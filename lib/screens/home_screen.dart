@@ -212,7 +212,12 @@ class _HomeScreenState extends State<HomeScreen>
                     color: AppTheme.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const AnsimMascot(size: 16, color: Colors.white),
+                  child: const AnsimMascot(
+                    size: 16,
+                    color: Colors.white,
+                    showBadge: true,
+                    badgeRadius: 13,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const Text('안심시그널'),
@@ -454,7 +459,7 @@ class _UncheckedContent extends StatelessWidget {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AnsimMascot(size: 80, color: Colors.white),
+        AnsimMascot(size: 80, color: Colors.white, showBadge: true),
         SizedBox(height: 10),
         Text(
           '나 괜찮아요',

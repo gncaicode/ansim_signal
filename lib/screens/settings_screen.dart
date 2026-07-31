@@ -91,8 +91,8 @@ class SettingsScreen extends StatelessWidget {
                     )),
               const SizedBox(height: 24),
 
-              // ── 설정 확인 ─────────────────────────────────
-              _SectionLabel(label: '설정 확인'),
+              // ── 통신 확인 ─────────────────────────────────
+              _SectionLabel(label: '통신 확인'),
               const _TestConnectionCard(),
               const SizedBox(height: 24),
 
@@ -309,7 +309,7 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ── 설정 확인 카드 ───────────────────────────────────────────
+// ── 통신 확인 카드 ───────────────────────────────────────────
 class _TestConnectionCard extends StatefulWidget {
   const _TestConnectionCard();
 
@@ -388,7 +388,7 @@ class _TestConnectionCardState extends State<_TestConnectionCard> {
                     ),
                   )
                 : const Text(
-                    '설정 확인',
+                    '통신 확인',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
           ),

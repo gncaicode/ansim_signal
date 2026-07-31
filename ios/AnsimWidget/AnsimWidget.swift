@@ -245,6 +245,16 @@ struct ShieldIcon: View {
             .stroke(Color.heartbeatGreen,
                     style: StrokeStyle(lineWidth: size*0.07, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
+
+            // Badge: 앱 아이콘과 동일한 초록 배지
+            Circle()
+                .fill(Color.white)
+                .frame(width: size * 0.21, height: size * 0.21)
+                .position(x: size * 0.90, y: size * 0.1054)
+            Circle()
+                .fill(Color.heartbeatGreen)
+                .frame(width: size * 0.1512, height: size * 0.1512)
+                .position(x: size * 0.90, y: size * 0.1054)
         }
         .frame(width: size, height: size)
     }

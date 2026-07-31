@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnsimMascot(size: 100, color: Colors.white),
+              AnsimMascot(size: 100, color: Colors.white, showBadge: true),
               SizedBox(height: 20),
               Text(
                 '안심시그널',

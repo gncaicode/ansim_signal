@@ -17,4 +17,11 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="@android:color/transparent" />
+    <!-- Badge: 앱 아이콘과 동일한 초록 배지 -->
+    <path
+        android:pathData="M90,10.54 m-10.5,0 a10.5,10.5 0 1,0 21,0 a10.5,10.5 0 1,0 -21,0"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M90,10.54 m-7.56,0 a7.56,7.56 0 1,0 15.12,0 a7.56,7.56 0 1,0 -15.12,0"
+        android:fillColor="#16A34A" />
 </vector>
