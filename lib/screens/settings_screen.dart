@@ -641,7 +641,7 @@ class _CheckinModeCard extends StatelessWidget {
   }
 }
 
-// ── 체크인 주기 선택 카드 ───────────────────────────────────
+// ── 체크인 주기 표시 카드 (서버에서 12~48시간 사이로 설정, 읽기 전용) ──
 class _IntervalCard extends StatelessWidget {
   final int current;
   const _IntervalCard({required this.current});
@@ -649,6 +649,8 @@ class _IntervalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(16),
@@ -661,80 +663,22 @@ class _IntervalCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          _IntervalOption(
-            label: '12시간',
-            desc: '하루 2회',
-            selected: current == 12,
-            isFirst: true,
+          Text(
+            '$current시간',
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.primary,
+            ),
           ),
-          Container(width: 1, height: 72, color: AppTheme.appInfoSep),
-          _IntervalOption(
-            label: '24시간',
-            desc: '하루 1회',
-            selected: current == 24,
-            isFirst: false,
+          const SizedBox(height: 4),
+          Text(
+            '이 주기마다 안부 신호를 보내주세요.',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSubtle),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _IntervalOption extends StatelessWidget {
-  final String label;
-  final String desc;
-  final bool selected;
-  final bool isFirst;
-
-  const _IntervalOption({
-    required this.label,
-    required this.desc,
-    required this.selected,
-    required this.isFirst,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: selected ? AppTheme.iconBg : Colors.transparent,
-          borderRadius: BorderRadius.horizontal(
-            left: isFirst ? const Radius.circular(16) : Radius.zero,
-            right: isFirst ? Radius.zero : const Radius.circular(16),
-          ),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: selected ? AppTheme.primary : AppTheme.textMedium,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              desc,
-              style: TextStyle(
-                fontSize: 12,
-                color: selected ? AppTheme.primary : AppTheme.textSubtle,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Icon(
-              selected
-                  ? Icons.check_circle_rounded
-                  : Icons.radio_button_off_rounded,
-              size: 20,
-              color: selected ? AppTheme.primary : AppTheme.textSubtle,
-            ),
-          ],
-        ),
       ),
     );
   }
