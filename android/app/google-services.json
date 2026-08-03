@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "865156137248",
+    "project_id": "ansim-signal",
+    "storage_bucket": "ansim-signal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:865156137248:android:b6bff2de92423780a05745",
+        "android_client_info": {
+          "package_name": "com.gncaitech.ansim_signal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbwSHw_4J4ymr_A5AOLKqXJVW6U-07-gA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

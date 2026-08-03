@@ -48,5 +48,8 @@ app.*.map.json
 ios/Pods/
 macos/Pods/
 
+# Firebase Crashlytics local tool cache
+.crashlytics/
+
 # Claude Code
 .claude/
