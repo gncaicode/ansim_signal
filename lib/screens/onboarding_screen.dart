@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/checkin_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/ansim_mascot.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -213,7 +212,14 @@ class _WelcomePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnsimMascot(size: 88, color: AppTheme.primaryLight),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'assets/icon/icon.png',
+              width: 88,
+              height: 88,
+            ),
+          ),
           const SizedBox(height: 24),
           const Text(
             '안심시그널',
