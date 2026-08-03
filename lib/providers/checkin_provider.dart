@@ -66,14 +66,10 @@ class CheckinProvider extends ChangeNotifier {
     _serverToken = await _secure.read(key: _kServerToken);
     _isOnboarded = prefs.getBool(PrefsKeys.isOnboarded) ?? false;
 
-    // iOS 재설치 복구
+    // 앱 삭제 후 재설치 시 Keychain에 남아있는 이전 토큰은 폐기한다.
+    // (iOS는 앱 삭제 시 SharedPreferences는 지우지만 Keychain은 남기므로,
+    //  기기가 다른 사람에게 넘어간 경우 이전 계정으로 자동 복구되는 것을 방지한다.)
     if (!_isOnboarded && _serverToken != null) {
-      final recovered = await _tryRecoverSession(prefs);
-      if (recovered) {
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
       await _secure.delete(key: _kServerToken);
       _serverToken = null;
     }
@@ -107,54 +103,6 @@ class CheckinProvider extends ChangeNotifier {
         timeRemaining: timeRemaining,
         intervalHours: _intervalHours,
       );
-    }
-  }
-
-  Future<bool> _tryRecoverSession(SharedPreferences prefs) async {
-    try {
-      final data = await ApiService.getStatus(_serverToken!);
-      if (data['status'] == null || data['status'] == 'error') return false;
-
-      _isOnboarded = true;
-      await prefs.setBool(PrefsKeys.isOnboarded, true);
-
-      final serverInterval = _parseInt(data['interval_hours']);
-      _intervalHours = serverInterval ?? 24;
-      await prefs.setInt(PrefsKeys.intervalHours, _intervalHours);
-
-      final serverModeStr = data['checkin_mode']?.toString();
-      _checkinMode = _modeFromString(serverModeStr);
-      await prefs.setString(PrefsKeys.checkinMode, _checkinMode.name);
-
-      final serverCheckinStr = data['last_checkin_at']?.toString();
-      if (serverCheckinStr != null) {
-        _lastCheckIn = DateTime.parse(serverCheckinStr).toLocal();
-        await prefs.setInt(PrefsKeys.lastCheckIn, _lastCheckIn!.millisecondsSinceEpoch);
-      }
-
-      _alertSent = _parseBool(data['alert_sent']);
-      await prefs.setBool(PrefsKeys.alertSent, _alertSent);
-
-      final serverName = data['user_name']?.toString();
-      if (serverName != null && serverName.isNotEmpty) {
-        _userName = serverName;
-        await prefs.setString(PrefsKeys.userName, serverName);
-      }
-
-      await _saveCareWorkersFromData(prefs, data['care_workers']);
-
-      debugPrint('[Provider] 재설치 세션 복구 완료 (iOS Keychain)');
-      await WidgetService.saveToken(_serverToken!);
-      await WidgetService.update(
-        status: status,
-        lastCheckIn: _lastCheckIn,
-        timeRemaining: timeRemaining,
-        intervalHours: _intervalHours,
-      );
-      return true;
-    } catch (e) {
-      debugPrint('[Provider] 세션 복구 실패: $e');
-      return false;
     }
   }
 
