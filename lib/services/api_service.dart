@@ -83,6 +83,19 @@ class ApiService {
     }
   }
 
+  /// 앱 버전 정보 조회 (강제 업데이트 체크용)
+  /// { min_version, latest_version, store_url }
+  static Future<Map<String, dynamic>> getAppVersion(String platform) async {
+    final res = await http
+        .get(Uri.parse('$baseUrl/app-version?platform=$platform'))
+        .timeout(_timeout);
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    }
+    throw Exception('getAppVersion failed: ${res.statusCode}');
+  }
+
   /// 회원 탈퇴
   static Future<void> withdraw(String token) async {
     final res = await http
