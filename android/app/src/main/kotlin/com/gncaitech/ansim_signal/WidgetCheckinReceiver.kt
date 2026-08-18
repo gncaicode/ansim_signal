@@ -1,11 +1,15 @@
 package com.gncaitech.ansim_signal
 
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +30,8 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
         private const val TAG = "WidgetCheckin"
         private const val API_URL = "http://ansim.gncaitech.com/api/checkin"
         private const val TOKEN_KEY = "ansim_server_token"
+        // notification_service.dart의 scheduleExpirationReminder()가 쓰는 알림 ID(7)와 반드시 일치해야 함
+        private const val EXPIRATION_REMINDER_NOTIFICATION_ID = 7
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private var activeJob: Job? = null
     }
@@ -37,6 +43,10 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
         val optimisticTs = System.currentTimeMillis()
         saveCheckinTime(context, optimisticTs)
         refreshWidgets(context)
+
+        // 위젯 체크인은 앱(Dart)을 거치지 않으므로, 이전 주기에 예약된 "마감 임박" 알림을
+        // 여기서 직접 취소해야 한다. 그러지 않으면 이미 체크인했는데도 알림이 울린다.
+        cancelExpirationReminder(context)
 
         activeJob?.cancel()
         activeJob = scope.launch {
@@ -120,6 +130,27 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
             fmt.parse(s.take(19))?.time ?: System.currentTimeMillis()
         } catch (e: Exception) {
             System.currentTimeMillis()
+        }
+    }
+
+    /**
+     * flutter_local_notifications가 예약해 둔 "마감 임박" 알림(ID 7)을 취소한다.
+     * 이 플러그인은 zonedSchedule 시 AlarmManager에 ScheduledNotificationReceiver로 향하는
+     * PendingIntent를 등록하므로, 동일한 PendingIntent를 만들어 alarmManager.cancel()로 꺼야
+     * 실제로 예약이 취소된다(이미 화면에 떠 있는 경우를 대비해 NotificationManager.cancel도 호출).
+     */
+    private fun cancelExpirationReminder(context: Context) {
+        try {
+            val scheduledIntent = Intent(context, ScheduledNotificationReceiver::class.java)
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, EXPIRATION_REMINDER_NOTIFICATION_ID, scheduledIntent, flags
+            )
+            (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(pendingIntent)
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .cancel(EXPIRATION_REMINDER_NOTIFICATION_ID)
+        } catch (e: Exception) {
+            Log.e(TAG, "만료 알림 취소 실패", e)
         }
     }
 

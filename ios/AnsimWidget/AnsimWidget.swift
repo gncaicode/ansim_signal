@@ -1,6 +1,7 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import UserNotifications
 
 // MARK: - Constants
 
@@ -23,6 +24,11 @@ struct CheckinIntent: AppIntent {
         WidgetData.save(to: defaults, date: now)
         WidgetCenter.shared.reloadAllTimelines()
 
+        // Widget check-in bypasses the Dart app, so the "deadline approaching"
+        // notification scheduled by notification_service.dart must be cancelled here.
+        // Otherwise it still fires even though the check-in already happened.
+        cancelExpirationReminder()
+
         // Confirm with server time
         if let serverDate = await callCheckinApi(token: token) {
             WidgetData.save(to: defaults, date: serverDate)
@@ -30,6 +36,15 @@ struct CheckinIntent: AppIntent {
         }
 
         return .result()
+    }
+
+    /// flutter_local_notifications assigns the Dart notification id ("7", from
+    /// notification_service.dart's scheduleExpirationReminder) as the string identifier
+    /// of the UNNotificationRequest — cancel both the pending and already-delivered one.
+    private func cancelExpirationReminder() {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["7"])
+        center.removeDeliveredNotifications(withIdentifiers: ["7"])
     }
 
     private func callCheckinApi(token: String) async -> Date? {
