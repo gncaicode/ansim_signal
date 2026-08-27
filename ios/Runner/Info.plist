@@ -31,20 +31,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- HTTP 허용 (ansim 서버가 http인 경우) -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>ansim.gncaitech.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<false/>
-			</dict>
-		</dict>
-	</dict>
 	<!-- 알림 권한 설명 -->
 	<key>NSUserNotificationUsageDescription</key>
 	<string>안부 신호 알림 및 마감 경고를 보내기 위해 필요합니다.</string>

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const baseUrl = 'http://ansim.gncaitech.com/api';
+  static const baseUrl = 'https://ansim.gncaitech.com/api';
 
   static const _timeout = Duration(seconds: 10);
 

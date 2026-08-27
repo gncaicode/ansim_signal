@@ -6,7 +6,7 @@ import UserNotifications
 // MARK: - Constants
 
 private let kAppGroup = "group.com.gncaitech.ansim_signal"
-private let kApiUrl   = "http://ansim.gncaitech.com/api/checkin"
+private let kApiUrl   = "https://ansim.gncaitech.com/api/checkin"
 
 // MARK: - Check-in Intent (iOS 17+, interactive widget button)
 

@@ -28,7 +28,7 @@ class WidgetCheckinReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "WidgetCheckin"
-        private const val API_URL = "http://ansim.gncaitech.com/api/checkin"
+        private const val API_URL = "https://ansim.gncaitech.com/api/checkin"
         private const val TOKEN_KEY = "ansim_server_token"
         // notification_service.dart의 scheduleExpirationReminder()가 쓰는 알림 ID(7)와 반드시 일치해야 함
         private const val EXPIRATION_REMINDER_NOTIFICATION_ID = 7
