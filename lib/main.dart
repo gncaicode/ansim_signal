@@ -134,7 +134,7 @@ class _AnsimSignalAppState extends State<AnsimSignalApp>
     );
   }
 
-  /// https://www.edcsystem.kr/ansimsignal_open/?code=XXXXXXXX 형태의
+  /// https://assignal.net/ansimsignal_open/?code=XXXXXXXX 형태의
   /// 초대코드 딥링크 처리. 코드는 온보딩 화면에 채우기만 하고 자동 제출은 하지 않는다.
   Future<void> _handleInviteLink(Uri uri) async {
     if (!uri.path.contains('ansimsignal_open')) return;

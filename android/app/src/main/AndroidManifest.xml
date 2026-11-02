@@ -38,7 +38,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="www.edcsystem.kr"
+                    android:host="assignal.net"
                     android:pathPrefix="/ansimsignal_open" />
             </intent-filter>
         </activity>
